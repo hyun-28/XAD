@@ -1,0 +1,144 @@
+"""Apply the pre-registered selection rules and freeze the result.
+
+Run this ONCE, commit configs/datasets.yaml, and never hand-edit it. If the
+selection changes after results are seen, that is cherry-picking and a reviewer
+will ask about it. The rules live here so the answer is "here is the script".
+
+RULES (pre-registered)
+  R1  file appears in the official TSB-AD Eval split
+  R2  0.4% <= anomaly ratio <= 10%
+      lower bound set just below UCR's ~0.6% so the primary archive survives
+  R3  6,000 <= length <= 900,000  (UCR spans 6,684 to 900,000)
+      NOTE: an earlier draft capped this at 60,000 on the theory that KernelSHAP
+      cost scales with series length. It does not -- we analyse sampled WINDOWS,
+      so cost scales with the window count `n`, not with L. The 60,000 cap would
+      have silently excluded most of the UCR archive (mean length ~67,800),
+      i.e. gutted the primary dataset. Compute is bounded by `n` instead.
+  R4  anomalies are not confined to the final 5% of the series
+      (excludes run-to-failure bias, one of Wu & Keogh's four flaws)
+  R5  the series is neither trivial nor impossible -- deferred to
+      scripts/screen_difficulty.py, which needs a fitted detector
+  R6  domain-balanced sample with a fixed seed
+
+Usage:
+    python scripts/build_dataset_config.py --root data/TSB-AD-U --n 40
+"""
+import argparse, os, re, json
+import numpy as np
+import pandas as pd
+
+# TSB-AD filenames look like:
+#   001_NAB_id_1_Facility_tr_1007_1st_2014.csv
+#    ^   ^          ^      ^        ^
+#    |   source     |      domain   train/test boundary index
+#    index          series id
+FNAME = re.compile(r"^(?P<idx>\d+)_(?P<source>[A-Za-z0-9]+)_id_(?P<sid>\d+)_"
+                   r"(?P<domain>[A-Za-z0-9]+)_tr_(?P<tr>\d+)_(?P<rest>.*)\.csv$")
+
+
+def parse_name(fn):
+    m = FNAME.match(fn)
+    return m.groupdict() if m else None
+
+
+def scan(root):
+    rows = []
+    for fn in sorted(os.listdir(root)):
+        if not fn.endswith(".csv"):
+            continue
+        meta = parse_name(fn)
+        try:
+            df = pd.read_csv(os.path.join(root, fn)).dropna()
+            y = df["Label"].astype(int).to_numpy()
+        except Exception as e:
+            rows.append({"file": fn, "error": str(e)}); continue
+        L = len(y)
+        anom = np.flatnonzero(y == 1)
+        rows.append({
+            "file": fn,
+            "source": (meta or {}).get("source"),
+            "domain": (meta or {}).get("domain"),
+            "tr": int((meta or {}).get("tr", 0) or 0),
+            "length": L,
+            "n_channels": df.shape[1] - 1,
+            "anomaly_ratio": float(y.mean()),
+            "n_anomaly_segments": int(np.sum(np.diff(np.r_[0, y, 0]) == 1)),
+            "last_anom_frac": float(anom.max() / L) if anom.size else np.nan,
+            "min_seg_len": int(min((len(g) for g in _runs(y)), default=0)),
+        })
+    return pd.DataFrame(rows)
+
+
+def _runs(y):
+    out, cur = [], []
+    for i, v in enumerate(y):
+        if v == 1:
+            cur.append(i)
+        elif cur:
+            out.append(cur); cur = []
+    if cur:
+        out.append(cur)
+    return out
+
+
+def apply_rules(df, n=40, seed=0):
+    d = df.dropna(subset=["length"]).copy()
+    d["R2"] = d.anomaly_ratio.between(0.004, 0.10)
+    d["R3"] = d.length.between(6000, 900000)
+    # R7: the mask width must fit inside the shortest anomalous segment,
+    # otherwise Experiment A's anomaly control arm is empty (see artifact.py).
+    d["R7"] = d.min_seg_len >= 10
+    d["R4"] = ~((d.last_anom_frac > 0.95) & (d.n_anomaly_segments <= 1))
+    keep = d[d.R2 & d.R3 & d.R4 & d.R7].copy()
+    rng = np.random.default_rng(seed)
+    picked = []
+    if not keep.empty:
+        per = max(1, n // max(1, keep.domain.nunique()))
+        for _, g in keep.groupby("domain", dropna=False):
+            take = min(per, len(g))
+            picked.append(g.iloc[rng.permutation(len(g))[:take]])
+        keep = pd.concat(picked)
+        if len(keep) > n:
+            keep = keep.iloc[rng.permutation(len(keep))[:n]]
+    return d, keep.sort_values("file")
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--root", default="data/TSB-AD-U")
+    ap.add_argument("--n", type=int, default=40)
+    ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--out", default="configs/datasets.yaml")
+    a = ap.parse_args()
+
+    df = scan(a.root)
+    df.to_csv("results/dataset_inventory.csv", index=False)
+    allrows, keep = apply_rules(df, a.n, a.seed)
+
+    print(f"scanned {len(df)} files")
+    for r in ("R2", "R3", "R4", "R7"):
+        if r in allrows:
+            print(f"  {r}: {int(allrows[r].sum())} pass")
+    print(f"selected {len(keep)}")
+    print(keep[["file", "domain", "length", "anomaly_ratio",
+                "n_anomaly_segments", "min_seg_len"]].to_string(index=False))
+
+    os.makedirs(os.path.dirname(a.out), exist_ok=True)
+    with open(a.out, "w") as f:
+        f.write("# GENERATED by scripts/build_dataset_config.py -- do not hand-edit.\n")
+        f.write(f"# rules: R2 ar in [0.004,0.10]; R3 len in [6000,900000];"
+                f" R4 not run-to-failure; R7 min_seg_len>=10;"
+                f" R6 domain-balanced seed={a.seed}\n")
+        f.write(f"root: {a.root}\nseed: {a.seed}\nfiles:\n")
+        for _, r in keep.iterrows():
+            f.write(f"  - file: {r.file}\n    domain: {r.domain}\n"
+                    f"    length: {int(r.length)}\n"
+                    f"    anomaly_ratio: {r.anomaly_ratio:.5f}\n"
+                    f"    min_seg_len: {int(r.min_seg_len)}\n")
+    print(f"\nwrote {a.out}  (commit this file)")
+    print("NOTE: R1 (official Eval split) and R5 (difficulty screen) are not"
+          " applied here -- see the docstring.")
+
+
+if __name__ == "__main__":
+    main()
