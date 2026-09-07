@@ -30,6 +30,19 @@ THREE VERIFIED TRAPS
 
 3. sklearn>=1.6 breaks decision_function via check_is_fitted. See src/compat.py.
 
+4. KMeansAD HAS NO decision_function. It is a bare
+   sklearn BaseEstimator/OutlierMixin, and its scoring entry point is
+   predict(). Calling decision_function() raises
+       AttributeError: 'KMeansAD' object has no attribute 'decision_function'
+   and, because SUPPORTED advertised the name, the failure only appeared when
+   a second detector was first used (the R5 screen). predict() is fit-free --
+   it calls self.model.predict on the fitted KMeans -- so fit-once/score-many
+   still holds; only the method name differs.
+   KMeansAD is also NOT subject to trap 2: _preprocess_data() applies the same
+   zscore in fit and in predict, so the two agree by construction.
+   It does print three lines on EVERY predict() call. Stage 3 makes ~700 calls
+   per series, so scoring suppresses stdout.
+
 SCORE CONVENTION (verified)
 ---------------------------
   * length == len(X); short window scores are edge-padded by TSB-AD itself
@@ -37,6 +50,9 @@ SCORE CONVENTION (verified)
         (w-1)//2      copies of the last value at the back
   * higher == more anomalous (TSB-AD applies invert_order internally)
 """
+import os
+from contextlib import redirect_stdout
+
 import numpy as np
 
 from .compat import patch_tsb_ad
@@ -93,13 +109,21 @@ class ScoreFn:
                                    epochs=kwargs.get("epochs", 50))
         self.clf.fit(train)
         self._n_calls = 0
+        # See trap 4: KMeansAD scores through predict(), not decision_function.
+        self._score_attr = "predict" if name == "KMeansAD" else "decision_function"
+        self._quiet = name == "KMeansAD"
 
     def __call__(self, X):
         X = np.asarray(X, float)
         if X.ndim == 1:
             X = X[:, None]
         self._n_calls += 1
-        s = np.asarray(self.clf.decision_function(X)).ravel()
+        fn = getattr(self.clf, self._score_attr)
+        if self._quiet:
+            with open(os.devnull, "w") as devnull, redirect_stdout(devnull):
+                s = np.asarray(fn(X)).ravel()
+        else:
+            s = np.asarray(fn(X)).ravel()
         if len(s) != len(X):                      # defensive; should not fire
             s = np.interp(np.linspace(0, 1, len(X)), np.linspace(0, 1, len(s)), s)
         return s
