@@ -1,0 +1,16 @@
+# --- datasets (462MB; redistributable from UCR/TSB-AD, never commit) ---
+AnomalyDatasets_2021/
+data/
+Datasets/
+
+# --- python ---
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# --- macOS / Office temp ---
+.DS_Store
+~$*
