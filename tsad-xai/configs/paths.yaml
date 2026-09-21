@@ -1,0 +1,22 @@
+# Paths for the data-lineage audit (BRIEF Task A).
+# Relative paths resolve against the repo root (the directory containing this
+# configs/ folder). Nothing here is hard-coded in source (BRIEF §3 A1 step 1).
+ucr:
+  # Wu & Keogh support page, cited in BRIEF §3 A1.
+  official_url: https://www.cs.ucr.edu/~eamonn/time_series_data_2018/UCR_TimeSeriesAnomalyDatasets2021.zip
+  # Researcher's pre-existing local copy (read-only; never written to).
+  local_zip: ../AnomalyDatasets_2021/UCR_TimeSeriesAnomalyDatasets2021.zip
+  local_extracted: ../AnomalyDatasets_2021/UCR_TimeSeriesAnomalyDatasets2021
+  # Where 01_download.py puts the freshly downloaded official zip and its
+  # extraction. git-ignored; only CHECKSUMS.sha256 is committed.
+  official_dir: data/raw/ucr/official
+  # Path of the 250 series inside the extracted archive, relative to the
+  # extraction root (matches BRIEF §3 A1).
+  fulldata_subdir: UCR_TimeSeriesAnomalyDatasets2021/FilesAreInHere/UCR_Anomaly_FullData
+  checksums: data/raw/ucr/CHECKSUMS.sha256
+  # Machine-readable A1 result consumed by 02_audit.py for the report header.
+  a1_result: data/raw/ucr/audit_a1.json
+  expected_n_series: 250
+manifest: data/manifest/ucr_manifest.csv
+reports_dir: reports
+docs_dir: docs

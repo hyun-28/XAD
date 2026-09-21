@@ -41,6 +41,8 @@ dependencies:
   - pytorch-cuda=12.1
   - pip:
       - TSB-AD==1.5
+      - python-pptx>=1.0   # Task A: slide-deck provenance extraction
+      - pyyaml
       - captum          # Integrated Gradients / Saliency / Occlusion
       # shap>=0.50 declares numpy>=2 -- incompatible with the numpy<2 pin above.
       - shap<=0.49.1    # KernelSHAP

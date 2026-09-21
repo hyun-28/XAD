@@ -2,6 +2,38 @@
 
 Working repository for the study described in `TSAD-XAI_파이프라인_설계서.md`.
 
+## Task A — UCR data-lineage audit (BRIEF §3) — DONE 2026-09-21
+
+Reproduce (needs network once, for the 184 MB official zip and the Goswami repo):
+
+```bash
+conda env create -f environment.yml && conda activate tsadxai
+python scripts/01_download.py && python scripts/02_audit.py
+python -m pytest tests -q
+```
+
+`scripts/03_gate1.py` / `04_report.py` (Tasks B, C) do not exist yet.
+
+| artefact | what |
+|---|---|
+| `reports/data_audit.md` | the audit report (A1 checksum table, A3 findings, cross-tabs, GT and index-convention evidence) — script output, never hand-edited |
+| `data/manifest/ucr_manifest.csv` | 250 rows, BRIEF A6 columns (+ provenance columns; A4 columns are `NA`) |
+| `data/raw/ucr/CHECKSUMS.sha256` | zip + per-file SHA256 of the official archive |
+| `docs/ucr_supplement_text.md` | text of every slide deck and MATLAB file shipped in the zip |
+| `docs/DECISIONS.md` | every choice made, with revert instructions |
+| `docs/DATA_LICENSE.md` | what the archive does (not) say about its licence |
+| `configs/conventions.yaml` | the index convention in force (D3) and its evidence |
+| `configs/goswami_entity_to_family.json` | Goswami's own UCR domain mapping, with commit/file/line |
+| `reports/figures/index_convention/` | plots of the 20 shortest anomalies under both index readings |
+
+Headline results: local copy ≡ official archive (266/266 files identical); 250 series parse,
+load, and pass every A3 check (0 STOP, 0 WARN); the filename fields are documented by the
+archive's own slides as MATLAB 1-based inclusive indices (`[begin-1, end)` in 0-based
+half-open form) — set as the default in `configs/conventions.yaml`, **researcher sign-off
+pending (D3)**; non-medical subset = 100 / 59 without DISTORTED.
+
+---
+
 **Status: environment verified, code tested, experiments not yet run on real data.**
 Everything here except the dataset download has been executed and passes.
 

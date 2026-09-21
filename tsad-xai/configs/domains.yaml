@@ -1,0 +1,47 @@
+# Domain labelling rules (BRIEF §3 A5). Two independent taxonomies; never mixed.
+#
+# (ii) domain_goswami: Goswami et al. (ICLR 2023) mapping vendored verbatim in
+#      configs/goswami_entity_to_family.json by scripts/00_fetch_goswami_mapping.py.
+#      Long family names are shortened to the 9 labels BRIEF A5 uses:
+goswami_short_labels:
+  "Acceleration Sensor Data": Acceleration
+  "Air Temperature": Air Temperature
+  "Atrial Blood Pressure (ABP)": ABP
+  "Electrocardiogram (ECG) Arrhythmia": ECG
+  "Gait": Gait
+  "Insect Electrical Penetration Graph (EPG)": EPG
+  "NASA Data": NASA
+  "Power Demand": Power Demand
+  "Respiration Rate (RESP)": RESP
+
+# (iv) is_medical: BRIEF A5 fixes ABP/ECG/RESP as medical. Gait and EPG are
+#      NOT medical by default (DECISIONS.md D-A5-3): EPG is insect feeding
+#      behaviour; Gait recordings come from clinical gait databases (gaitndd,
+#      GaitPhase) but measure locomotion, not a physiological signal. Researcher
+#      may override here.
+medical_domains: [ABP, ECG, RESP]
+
+# (0) domain_official: derived from the per-series source statements in the
+#     archive's own UCR_AnomalyDataSets.pptx (extracted by src/data/provenance.py).
+#     The SOURCE TEXT is the authoritative datum; the category below is OUR
+#     reading of it, using the same 9 labels so it can be compared with
+#     Goswami. First matching rule wins; no match -> NA (reported).
+official_source_rules:
+  # Applied line by line to the deck's source statements, in the order the
+  # deck states them; within a line the first rule below that matches wins.
+  # Rules are ordered most-specific first so that a slide which mentions a
+  # second signal only to describe the INJECTED anomaly (PowerDemand3/4 splice
+  # in pig ABP; EPG5 splices in human ECG) still resolves to the data source.
+  - {pattern: "Italian power demand", label: Power Demand}
+  - {pattern: "CIMIS|air temperature", label: Air Temperature}
+  - {pattern: "NASA spacecraft", label: NASA}
+  - {pattern: "\\bEPG\\b|Asian Citrus Psyllid|insect", label: EPG}
+  - {pattern: "Gait in Neurodegenerative Disease|GaitPhase|force plate|WeAllWalk", label: Gait}
+  - {pattern: "respiration dataset|MIMIC Database", label: RESP}
+  - {pattern: "accelerometer|acceleration data|activity recognition", label: Acceleration}
+  # Labels below are OUTSIDE Goswami's 9 on purpose: the deck states a source
+  # that is not one of those signals, so forcing it into the 9 would hide it.
+  - {pattern: "bidmc|Plethysmograph", label: "PPG (bidmc)"}
+  - {pattern: "CHARIS", label: "CHARIS (ECG/ABP/ICP unspecified)"}
+  - {pattern: "Sudden Cardiac Death Holter|PAF Prediction Challenge|Apnea-ECG Database|Long Term ST Database|QT Database|MIT-BIH Long-term ECG|Fantasia Database|STAFFIII|ECG trace|electrocardiogram", label: ECG}
+  - {pattern: "arterial blood pressure|tilt table|\\bAPB\\b|\\bABP\\b", label: ABP}

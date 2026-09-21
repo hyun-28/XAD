@@ -1,6 +1,6 @@
 # --- datasets (462MB; redistributable from UCR/TSB-AD, never commit) ---
 AnomalyDatasets_2021/
-data/
+/data/
 Datasets/
 
 # --- python ---

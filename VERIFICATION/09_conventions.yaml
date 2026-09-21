@@ -1,0 +1,29 @@
+# Index convention for the UCR Anomaly Archive 2021 filename fields
+# <train_end>_<begin>_<end>  (BRIEF §3 A2, researcher decision D3).
+#
+# Allowed values (src/data/conventions.py::IndexConvention):
+#   matlab_1based_inclusive  begin/end are MATLAB indices: 1-based, both ends
+#                            included  ->  0-based half-open [begin-1, end)
+#   zero_based_inclusive     0-based, end included        ->  [begin, end+1)
+#   zero_based_exclusive     0-based, end excluded        ->  [begin, end)
+#   null                     undetermined: every conversion raises and the
+#                            manifest carries NA for start0/stop0
+#
+# DOCUMENTARY EVIDENCE for the default (all from the archive's own
+# UCR_AnomalyDataSets.pptx, text in docs/ucr_supplement_text.md):
+#   slide 4   "L = end - begin + 1"                      -> end is inclusive
+#   slide 5   "From 1 to X is training data"            -> 1-based counting
+#   slide 5   "Files are '-ascii' format"               -> MATLAB save -ascii
+#   slides 52, 53, 90-99  injection code
+#             T(start_anomaly:end_anomaly) = ...         -> MATLAB 1-based,
+#             randn(end_anomaly-start_anomaly+1, 1)        inclusive slice
+#   slide 6   a(200:280) "starts at 200 ... output 240"  -> MATLAB indices
+# Empirical corroboration: reports/figures/index_convention/ (02_audit.py).
+#
+# D3 status: default set from the documentary evidence above; the researcher
+# signs off (or overrides here). Changing this value and re-running
+# scripts/02_audit.py regenerates every derived index.
+index_convention: matlab_1based_inclusive
+
+# train_end is NOT affected by the choice above: slide 5 says the first X
+# points are training data, so the training prefix is always x[:train_end].

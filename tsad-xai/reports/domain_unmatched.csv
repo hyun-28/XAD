@@ -1,0 +1,17 @@
+num,name,domain_official,domain_goswami,deck_slides,source_official
+4,DISTORTEDBIDMC1,PPG (bidmc),ECG,55,"Selected input: record bidmc/bidmc01 , annotator ann1 , from 0:00.000 to 1:00.000"
+5,DISTORTEDCIMIS44AirTemperature1,NA,Air Temperature,NA,NA
+94,NOISEBIDMC1,PPG (bidmc),ECG,55,"Selected input: record bidmc/bidmc01 , annotator ann1 , from 0:00.000 to 1:00.000"
+112,BIDMC1,PPG (bidmc),ECG,55,"Selected input: record bidmc/bidmc01 , annotator ann1 , from 0:00.000 to 1:00.000"
+113,CIMIS44AirTemperature1,NA,Air Temperature,NA,NA
+201,CHARISfive,CHARIS (ECG/ABP/ICP unspecified),ECG,116;117,CHARISfive
+202,CHARISfive,CHARIS (ECG/ABP/ICP unspecified),ECG,116;117,CHARISfive
+203,CHARISfive,CHARIS (ECG/ABP/ICP unspecified),ECG,116;117,CHARISfive
+204,CHARISfive,CHARIS (ECG/ABP/ICP unspecified),ECG,116;117,CHARISfive
+205,CHARISfive,CHARIS (ECG/ABP/ICP unspecified),ECG,116;117,CHARISfive
+206,CHARISten,CHARIS (ECG/ABP/ICP unspecified),ECG,115,CHARISten
+207,CHARISten,CHARIS (ECG/ABP/ICP unspecified),ECG,115,CHARISten
+208,CHARISten,CHARIS (ECG/ABP/ICP unspecified),ECG,115,CHARISten
+239,taichidbS0715Master,NA,Gait,110,NA
+240,taichidbS0715Master,NA,Gait,110,NA
+241,taichidbS0715Master,NA,Gait,110,NA
