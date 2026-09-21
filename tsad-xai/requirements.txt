@@ -1,0 +1,31 @@
+# Full stack. INSTALL ORDER MATTERS -- see scripts/setup_mac.sh.
+# If you use this file directly, run the sklearn pin again afterwards:
+#     pip install -r requirements.txt
+#     pip install "scikit-learn<1.6"      # TSB-AD would otherwise upgrade it
+#
+# Verified resolutions (2026-09-07): numpy 1.26.4, scikit-learn 1.5.2
+numpy>=1.24.3,<2.0
+pandas>=2.0.3,<3.0
+scipy>=1.10
+matplotlib>=3.7.5
+seaborn
+statsmodels
+tqdm
+pytest
+torch
+torchvision
+torchaudio
+TSB-AD==1.5
+hurst>=0.0.5
+arch>=5.3.1
+stumpy>=1.12.0
+tslearn>=0.6.3
+networkx>=3.1
+einops
+torchinfo
+h5py
+captum
+# shap>=0.50 declares numpy>=2 and cannot coexist with TSB-AD's numpy<2.0.
+# pip installs it anyway without erroring; KernelSHAP then fails at call time.
+shap<=0.49.1
+scikit-learn>=1.3.2,<1.6

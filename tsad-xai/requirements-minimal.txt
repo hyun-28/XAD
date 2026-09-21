@@ -1,0 +1,5 @@
+# Enough to run scripts/ucr_inventory.py right now. Nothing else.
+#   pip install -r requirements-minimal.txt
+numpy>=1.24.3,<2.0
+pandas>=2.0.3,<3.0
+scipy>=1.10

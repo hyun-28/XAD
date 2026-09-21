@@ -1,0 +1,17 @@
+# --- datasets (never commit; 462MB, redistributable from UCR/TSB-AD) ---
+data/
+Datasets/
+AnomalyDatasets_2021/
+
+# --- generated results ---
+# NOTE: results/exp_a.csv is force-added despite this rule -- it is the
+# provenance record that requirements.lock.txt was verified against.
+results/*.csv
+
+# --- python ---
+__pycache__/
+*.pyc
+.venv/
+
+# --- macOS ---
+.DS_Store
