@@ -8,11 +8,16 @@ researcher's local copy), audits all 250 series, and writes:
   reports/figures/index_convention/*.png empirical convention evidence (A2)
   reports/index_convention_evidence.csv  the numbers behind those figures
   reports/domain_unmatched.csv           series with no official domain
-  reports/data_audit.md                  the report (A6, six sections + A1)
+  reports/recording_groups.csv           F2 pairwise correlations and verdicts
+  reports/figures/sentinels/*.png        F3 plain-vs-twin sentinel figures
+  data/derived/sentinels/<num>.npy       F3 exclusion indices (0-based, not in GT)
+  reports/data_audit.md                  the report (A6 six sections + A1 + F2/F3/F4 §7-9)
 
-Exit code: 2 if any STOP-severity finding (BRIEF §7-1/§7-5), 1 if any
-WARN-severity finding, else 0. Nothing is skipped silently: every finding
-is in the manifest's audit_flags and in the report.
+Exit code: 2 if any STOP-severity finding (BRIEF §7-1/§7-5, follow-up STOP-2/3),
+1 if any WARN-severity finding, else 0. Nothing is skipped silently: every
+finding is in the manifest's audit_flags and in the report. Since the
+follow-up brief (F3) the −999 sentinels in normal regions are a WARN, so
+exit 1 is the expected outcome on the unmodified archive.
 
 Usage:  python scripts/02_audit.py [--no-figures]
 """
@@ -33,8 +38,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.config import REPO_ROOT, load_yaml, resolve  # noqa: E402
 from src.data.audit_checks import SEVERITY, check_series, index_evidence  # noqa: E402
 from src.data.conventions import (ConventionUndetermined, active_convention,  # noqa: E402
-                                  to_half_open, train_prefix_stop)
+                                  approval_status, to_half_open, train_prefix_stop)
 from src.data.domains import is_medical, load_goswami, official_domain  # noqa: E402
+from src.data.followup import (FOLLOWUP_COLUMNS, run_recording_groups, run_sentinels,  # noqa: E402
+                               run_subsets, sentinel_figures, write_pairs_csv)
 from src.data.provenance import match_series, parse_deck  # noqa: E402
 from src.data.supplement import extract_all  # noqa: E402
 from src.data.ucr import file_layout, load_series, scan_archive  # noqa: E402
@@ -48,6 +55,7 @@ MANIFEST_COLUMNS = [
     "domain_official", "domain_official_basis", "domain_agree", "source_official", "deck_slides",
     "in_tsbad", "tsbad_filename", "tsbad_domain", "match_method",
     "tsbad_label_n_segments", "tsbad_label_start0", "tsbad_label_stop0", "gt_agree",
+    *FOLLOWUP_COLUMNS,
     "audit_flags",
 ]
 NA = "NA"
@@ -116,10 +124,12 @@ def main() -> int:
 
     # ---- A3 + manifest rows ----------------------------------------------------
     rows, evidence, figures = [], [], []
-    series_cache = {}
+    series_cache, deck_text = {}, {}
     for m in metas:
         p = fulldata_dir / m.filename
         x = load_series(p)
+        x.setflags(write=False)          # BRIEF §1-3: nothing downstream may modify a series
+        series_cache[m.num] = x
         layout = file_layout(p)
         a3 = check_series(x, m, layout)
         flags = list(a3.flags)
@@ -132,6 +142,7 @@ def main() -> int:
         anom_len = m.end_raw - m.begin_raw + 1  # inclusive count, slide 4 "L = end - begin + 1"
 
         prov = match_series(deck, m.name)
+        deck_text[m.num] = prov["slide_text"]
         if not prov["deck_found"]:
             flags.append("NOT_IN_DECK")
         deck_fields = prov["deck_fields"]
@@ -170,11 +181,23 @@ def main() -> int:
             "in_tsbad": NA, "tsbad_filename": NA, "tsbad_domain": NA, "match_method": NA,
             "tsbad_label_n_segments": NA, "tsbad_label_start0": NA, "tsbad_label_stop0": NA,
             "gt_agree": NA,
-            "audit_flags": ";".join(flags) or "none",
             "_train_std": a3.train_std, "_layout": layout, "_flags": flags,
             "_n_minus999": a3.n_minus999,
         })
     print(f"audited {len(rows)} series")
+
+    # ---- follow-up F2 / F3 / F4 (docs/briefs/BRIEF_A-followup.md) -------------------
+    rg = run_recording_groups(rows, series_cache)
+    write_pairs_csv(rg["pairs"], reports_dir / "recording_groups.csv")
+    print(f"F2: {len(rg['pairs'])} pairs compared; name_groups={len(rg['ng_sizes'])} "
+          f"content_groups={len(rg['cg_sizes'])}")
+    sent = run_sentinels(rows, series_cache, deck_text)
+    print(f"F3: {sum(1 for r in rows if r['sentinel_near_n'])} series with sentinels; "
+          f"exclusion files in {sent['derived_dir']}")
+    sent_figs = [] if args.no_figures else sentinel_figures(rows, series_cache, sent)
+    subsets = run_subsets(rows)
+    for r in rows:                       # flags are final only now
+        r["audit_flags"] = ";".join(r["_flags"]) or "none"
 
     # ---- manifest -----------------------------------------------------------------
     manifest_path = resolve(paths["manifest"])
@@ -298,12 +321,32 @@ def main() -> int:
           "Flag counts:", "",
           md_table(["flag", "severity", "series"], [[k, SEVERITY[k], v] for k, v in sorted(flag_counter.items())]),
           ""]
-    if stop_rows:
+    GT_STOP = {"NOT_1D_FLOAT64", "NAN_OR_INF", "END_GT_LEN", "BEGIN_GT_END", "BEGIN_LE_TRAIN_END",
+               "TRAIN_END_GE_LEN"}
+    gt_stop_rows = [r for r in rows if GT_STOP & set(r["_flags"])]
+    if gt_stop_rows:
         L += ["**STOP (BRIEF §7-5): filename GT contradictions**", ""]
-        L += [f"- {r['filename']}: {r['audit_flags']}" for r in stop_rows]
+        L += [f"- {r['filename']}: {r['audit_flags']}" for r in gt_stop_rows]
         L.append("")
+    def _sev_label(flag):
+        return {"STOP": "**STOP**", "WARN": "WARN", "INFO": "INFO (resolved)"}[SEVERITY[flag]]
+    if flag_counter["CONTENT_GROUP_CROSSES_NAME"]:
+        L += [f"{_sev_label('CONTENT_GROUP_CROSSES_NAME')} — follow-up brief STOP-2: `content_group` merges "
+              f"different `name_group`s for {flag_counter['CONTENT_GROUP_CROSSES_NAME']} series (§7d). "
+              "Researcher decision 2026-09-22 (D-F2-2): `content_group` is the unit of analysis; "
+              "`name_group` is the sensitivity analysis.", ""]
+    if flag_counter["SENTINEL_IN_GT_UNDOCUMENTED"]:
+        L += [f"{_sev_label('SENTINEL_IN_GT_UNDOCUMENTED')} — follow-up brief STOP-3: exact −999 inside the GT "
+              "interval with no −999 mention in the series' deck slides: "
+              + ", ".join(r["filename"] for r in rows if "SENTINEL_IN_GT_UNDOCUMENTED" in r["_flags"])
+              + ". Researcher decision 2026-09-22 (D-F3-4): −999 is an ordinary measurement; no action.", ""]
+    if flag_counter["SENTINEL_IN_NORMAL"]:
+        L += [f"{_sev_label('SENTINEL_IN_NORMAL')} — `SENTINEL_IN_NORMAL` ×{flag_counter['SENTINEL_IN_NORMAL']}: "
+              "exact −999 in the training prefix or the normal test region (§8). D-F3-4: treated as normal "
+              "data, not excluded from the main analysis; `no_sentinel` subset kept for sensitivity analysis.", ""]
     if warn_rows:
-        L += ["WARN:", ""] + [f"- {r['filename']}: {r['audit_flags']}" for r in warn_rows] + [""]
+        L += [f"WARN ({len(warn_rows)} series):", ""]
+        L += [f"- {r['filename']}: {r['audit_flags']}" for r in warn_rows] + [""]
     single = [r for r in rows if r["_layout"]["single_line"]]
     single_ids = ", ".join("%03d" % r["num"] for r in single)
     L += ["### A3 format facts", "",
@@ -333,12 +376,17 @@ def main() -> int:
     nonmed_plain = [r for r in nonmed if r["variant"] == "plain"]
     def bold_if_small(n):
         return f"**{n} (< 30)**" if n < 30 else str(n)
+    unit = load_yaml("stats")["unit_of_analysis"]
+    def ngr(rs):
+        return len({r[unit] for r in rs})
     L += ["## 3. Non-medical subset (is_medical = False ⇔ domain_goswami ∉ "
           f"{load_yaml('domains')['medical_domains']})", "",
-          md_table(["subset", "n"], [
-              ["non-medical, all variants", bold_if_small(len(nonmed))],
-              ["non-medical, DISTORTED excluded", bold_if_small(len(nonmed_nd))],
-              ["non-medical, plain only (DISTORTED and NOISE excluded)", bold_if_small(len(nonmed_plain))],
+          f"`n_groups` counts distinct `{unit}` (configs/stats.yaml; §7).", "",
+          md_table(["subset", "n_series", "n_groups"], [
+              ["non-medical, all variants", bold_if_small(len(nonmed)), bold_if_small(ngr(nonmed))],
+              ["non-medical, DISTORTED excluded", bold_if_small(len(nonmed_nd)), bold_if_small(ngr(nonmed_nd))],
+              ["non-medical, plain only (DISTORTED and NOISE excluded)", bold_if_small(len(nonmed_plain)),
+               bold_if_small(ngr(nonmed_plain))],
           ]), "",
           md_table(["domain_goswami", "n", "is_medical"],
                    [[d, n, m] for (d, m), n in sorted(Counter((r["domain_goswami"], r["is_medical"]) for r in rows).items())]),
@@ -348,11 +396,15 @@ def main() -> int:
     by_dom = defaultdict(list)
     for r in rows:
         by_dom[r["domain_goswami"]].append(r["anom_len"])
+    all_len = [r["anom_len"] for r in rows]
     L += ["## 4. Anomaly length (inclusive count end − begin + 1) by domain_goswami", "",
-          md_table(["domain", "n", "min", "median", "max"],
-                   [[d, len(v), min(v), int(np.median(v)), max(v)] for d, v in sorted(by_dom.items())]
-                   + [["**all**", len(rows), min(r["anom_len"] for r in rows),
-                       int(np.median([r["anom_len"] for r in rows])), max(r["anom_len"] for r in rows)]]),
+          "`n_len≤2` (F6): series whose anomaly is at most two points long — a perturbation region "
+          "much larger than this changes how localization metrics read (Task B/C).", "",
+          md_table(["domain", "n", "min", "median", "max", "n_len≤2"],
+                   [[d, len(v), min(v), int(np.median(v)), max(v), sum(1 for a in v if a <= 2)]
+                    for d, v in sorted(by_dom.items())]
+                   + [["**all**", len(rows), min(all_len), int(np.median(all_len)), max(all_len),
+                       sum(1 for a in all_len if a <= 2)]]),
           ""]
 
     # 5. GT disagreements
@@ -418,8 +470,133 @@ def main() -> int:
                          + ("; ".join(f"{t['num']:03d} {t['verdict']} (ratio {t['ratio_H1_over_H0']:.2f})"
                                       for t in twins) or "none"))
             L.append("")
-    L += ["**D3 status:** default set from the documentary evidence; researcher sign-off pending "
-          "(BRIEF §8). Override `index_convention` in `configs/conventions.yaml` and re-run this script.", ""]
+    L += [f"**D3 status:** {approval_status()} (`configs/conventions.yaml`, DECISIONS D-A2-1/D-A2-3). "
+          "Override `index_convention` there and re-run this script.", ""]
+
+    # 7. recording groups (F2)
+    rgc = rg["cfg"]
+    pairs = rg["pairs"]
+    same = [q for q in pairs if q.same_name_group]
+    cross = [q for q in pairs if not q.same_name_group]
+    def size_dist(sizes):
+        c = Counter(sizes.values())
+        return md_table(["group size", "n groups", "n series"],
+                        [[k, v, k * v] for k, v in sorted(c.items())] + [["**total**", len(sizes), sum(sizes.values())]])
+    def corr_hist(qs):
+        vals = np.array([q.corr for q in qs if np.isfinite(q.corr)])
+        edges = [-1.0, 0.0, 0.5, 0.8, 0.9, float(rgc["corr_threshold"]), 0.99, 1.0000001]
+        h, _ = np.histogram(vals, bins=edges)
+        return md_table(["corr bin", "pairs"],
+                        [[f"[{edges[i]:.2f}, {edges[i+1]:.2f})", int(h[i])] for i in range(len(h))]
+                        + [["nan (constant prefix)", sum(1 for q in qs if not np.isfinite(q.corr))],
+                           ["**total**", len(qs)]])
+    dis = rg["disagreements"]
+    L += ["## 7. Recording groups (follow-up F2)", "",
+          "Researcher decision 2026-09-22 (D-F2-2): **`content_group` is the primary unit of analysis** "
+          "(89 groups over all 250 series); `name_group` (100) is the sensitivity analysis.", "",
+          f"`name_group` = `<name>` minus a leading `DISTORTED`/`NOISE` prefix. `content_group` = connected "
+          f"components of pairs whose Pearson r on the z-normalised first {rgc['compare_points']:,} points of "
+          f"both training prefixes is ≥ {rgc['corr_threshold']}. Pairs compared: all same-name pairs "
+          f"({len(same)}) + cross-name pairs within one `domain_goswami` whose lengths differ by ≤ "
+          f"{100*float(rgc['cross_length_tol']):g}% ({len(cross)}). Every pair: `reports/recording_groups.csv`. "
+          f"Unit of analysis in force: **`{unit}`** (`configs/stats.yaml`).", "",
+          "### 7a. Group size distributions", "",
+          "`name_group`:", "", size_dist(rg["ng_sizes"]), "",
+          "`content_group`:", "", size_dist(rg["cg_sizes"]), "",
+          "### 7b. Correlation distribution (is the threshold reasonable?)", "",
+          "Same-name pairs:", "", corr_hist(same), "",
+          "Cross-name pairs:", "", corr_hist(cross), "",
+          f"Borderline pairs (0.80 ≤ r < {rgc['corr_threshold']}): "
+          + ("; ".join(f"{q.num_a:03d}–{q.num_b:03d} {q.name_a}/{q.name_b} r={q.corr:.3f}"
+                       for q in pairs if 0.8 <= q.corr < float(rgc["corr_threshold"])) or "none"), "",
+          "### 7c. Same name, different content (name_group split by content_group)", "",
+          f"{len(dis['same_name_diff_content'])} name_groups:", ""]
+    for k, v in sorted(dis["same_name_diff_content"].items()):
+        members = [r for r in rows if r["name_group"] == k]
+        L.append(f"- `{k}` → {', '.join(v)}: " + ", ".join(
+            f"{r['num']:03d} {r['variant'][0]} L={r['length']:,}→{r['content_group']}"
+            for r in sorted(members, key=lambda r: r["num"])))
+    L += ["", "### 7d. Different name, same content (content_group spanning name_groups) — STOP-2", "",
+          f"{len(dis['diff_name_same_content'])} content_groups:", ""]
+    for k, v in sorted(dis["diff_name_same_content"].items()):
+        members = [r for r in rows if r["content_group"] == k]
+        L.append(f"- `{k}` ({len(members)} series, {len(v)} name_groups): " + ", ".join(v))
+    L += ["", f"Series carrying `CONTENT_GROUP_CROSSES_NAME`: {flag_counter['CONTENT_GROUP_CROSSES_NAME']}.",
+          f"Cross-name pairs at r ≥ {rgc['corr_threshold']}: {sum(1 for q in cross if q.same_recording)}; "
+          f"of those exactly r = 1.000000: {sum(1 for q in cross if q.same_recording and round(q.corr, 6) == 1.0)}.",
+          ""]
+
+    # 8. sentinels (F3)
+    sc = sent["cfg"]
+    with_s = [r for r in rows if r["sentinel_exact_n"]]
+    near_only = [r for r in rows if r["sentinel_near_n"] and not r["sentinel_exact_n"]]
+    x_ranges = {r["num"]: (float(series_cache[r["num"]].min()), float(series_cache[r["num"]].max()),
+                           bool(np.all(series_cache[r["num"]] == np.round(series_cache[r["num"]]))))
+                for r in with_s}
+    L += ["## 8. −999 sentinels (follow-up F3)", "",
+          f"exact: `x == -999`; near: `|x + 999| ≤ {sc['near_mad_factor']} × MAD(train prefix)` (near ⊇ exact). "
+          f"GT interval from the active convention. `spike_n` / `max_k`: how many exact points are local "
+          f"outliers **in their own series** (`|x[i] − median_w| / MAD_w > k`, w = {sc['twin_window']}, "
+          f"k = {sc['twin_k']}) and the largest such ratio. Twin check (F3-2): the plain series' exact indices "
+          f"tested with the same rule in each DISTORTED/NOISE twin of the same `name_group`; format "
+          f"`twin:status(confirmed/absent/length_mismatch)`. Exclusion indices (exact, not in_gt): "
+          f"`{sc['derived_dir']}/<num>.npy`. **No series was modified.**", "",
+          "**Finding (measured, drives D-F3-2):** the near tolerance is unusable on this archive — see the "
+          "`tol` and `range` columns: the series that contain −999 are 12-bit-scale signals (about ±2047) with "
+          f"training-prefix MAD in the hundreds, so tol = {sc['near_mad_factor']}×MAD spans a large part of the "
+          "signal range. `near` therefore counts ordinary samples "
+          f"({sum(r['sentinel_near_n'] for r in rows):,} points in {sum(1 for r in rows if r['sentinel_near_n'])} "
+          f"series, {len(near_only)} of them with no exact hit at all). The near count is kept in the manifest as "
+          "specified; classification, twin check and the exclusion files use **exact** indices only.", "",
+          md_table(["item", "value"], [
+              ["series with ≥ 1 exact sentinel", len(with_s)],
+              ["… of which plain / DISTORTED / NOISE",
+               " / ".join(str(sum(1 for r in with_s if r["variant"] == v)) for v in ("plain", "DISTORTED", "NOISE"))],
+              ["… integer-valued (all samples integral)", sum(1 for r in with_s if x_ranges[r["num"]][2])],
+              ["series with an exact sentinel in the training prefix", sum(1 for r in rows if r["sentinel_in_train_n"])],
+              ["series with an exact sentinel in the normal test region", sum(1 for r in rows if r["sentinel_in_test_normal_n"])],
+              ["series with an exact sentinel inside the GT interval", sum(1 for r in rows if r["sentinel_in_gt_n"])],
+              ["total exact sentinel points", sum(r["sentinel_exact_n"] for r in rows)],
+              [f"… that are local spikes in their own series (k > {sc['twin_k']})", sum(r["sentinel_spike_n"] for r in rows)],
+              ["series with ≥ 1 near hit (superset)", sum(1 for r in rows if r["sentinel_near_n"])],
+          ]), "",
+          "### 8a. Per-series table (exact hits)", "",
+          md_table(["num", "name", "variant", "domain", "exact", "spike_n", "max_k", "near", "tol", "range",
+                    "in_gt", "in_train", "in_test_normal", "twin status"],
+                   [[f"{r['num']:03d}", r["name"], r["variant"], r["domain_goswami"], r["sentinel_exact_n"],
+                     r["sentinel_spike_n"], r["sentinel_max_k"], r["sentinel_near_n"],
+                     f"{r['_sentinel_tol']:.3g}", f"[{x_ranges[r['num']][0]:g}, {x_ranges[r['num']][1]:g}]",
+                     r["sentinel_in_gt_n"], r["sentinel_in_train_n"], r["sentinel_in_test_normal_n"],
+                     r["sentinel_twin_status"]]
+                    for r in with_s]), "",
+          "### 8b. Twin check summary", ""]
+    tw = Counter()
+    for checks in sent["twin_checks"].values():
+        for c in checks:
+            tw[c.status] += 1
+    L += [md_table(["twin status", "n twins"], [[k, v] for k, v in sorted(tw.items())]
+                   + [["plain series with sentinels but no DISTORTED/NOISE twin",
+                       sum(1 for r in with_s if r["variant"] == "plain" and r["sentinel_twin_status"] == NA)]]),
+          "",
+          "### 8c. Series with an exact sentinel in the normal test region, by domain", "",
+          md_table(["domain_goswami", "n series"],
+                   [[d, n] for d, n in sorted(Counter(r["domain_goswami"] for r in rows
+                                                       if r["sentinel_in_test_normal_n"]).items())]), "",
+          "- " + ", ".join(f"{r['num']:03d} {r['name']}" for r in rows if r["sentinel_in_test_normal_n"]), ""]
+    if sent_figs:
+        L += [f"Figures (`{sc['figures_dir']}`, top {sc['figures_top_n']} plain series by sentinel count "
+              "having a same-length twin): " + ", ".join(f"`{f.name}`" for f in sent_figs), ""]
+
+    # 9. subsets (F4)
+    stats = load_yaml("stats")
+    L += ["## 9. Subsets (follow-up F4; `configs/subsets.yaml`)", "",
+          f"Unit of analysis: **`{unit}`** (D-F2-2); sensitivity unit: `{stats['sensitivity_unit']}`. "
+          f"Rows with n_groups(unit) < {stats['min_groups_for_hypothesis_test']} are **descriptive only** "
+          "(no hypothesis test; `configs/stats.yaml`). Per D-F2-2 the hypothesis-test population is `all`; "
+          "`non_medical` and `physical` are reported descriptively regardless.", "",
+          md_table(["subset", "n_series", f"n_groups ({unit})", f"n_groups ({stats['sensitivity_unit']})", "status"],
+                   [[s_["subset"], s_["n_series"], s_["n_groups"], s_["n_sensitivity_groups"],
+                     "**descriptive only**" if s_["descriptive_only"] else "ok"] for s_ in subsets]), ""]
 
     # A5 provenance summary
     L += ["## A5. Domain mapping provenance", "",

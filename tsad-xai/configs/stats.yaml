@@ -1,0 +1,32 @@
+# Unit of analysis and recording-group parameters (BRIEF_A-followup F2).
+#
+# The 250 archive series are not independent samples: plain / DISTORTED / NOISE
+# variants of one recording (UCR_AnomalyDataSets.pptx slide 100) and several
+# same-name series share signal. Every hypothesis test downstream uses the
+# group, not the series, as its sample unit.
+# Researcher decision 2026-09-22 (DECISIONS.md D-F2-2): content_group is the
+# primary unit (89 groups over all 250 series); name_group is the sensitivity
+# analysis. The full 250-series set is the hypothesis-test population;
+# non_medical / physical subsets are reported descriptively.
+unit_of_analysis: content_group      # primary. name_group is the sensitivity analysis
+sensitivity_unit: name_group
+aggregate_within_group: mean         # per-group mean of series-level results, then test
+bootstrap_resample_unit: content_group  # bootstrap resamples groups, not series
+min_groups_for_hypothesis_test: 30   # subsets below this: descriptive statistics only
+
+recording_groups:
+  # name_group: <name> with the leading DISTORTED / NOISE prefix removed
+  # (src/data/ucr.py::UcrMeta.base_name). Nothing else is stripped.
+  #
+  # content_group: union of every pair whose Pearson correlation, computed on
+  # the z-normalised first `compare_points` samples of the training prefix
+  # (fewer if train_end is smaller), is >= `corr_threshold`. Length and
+  # train_end are recorded per pair but do not enter the verdict (a shorter
+  # cut of the same recording is still the same recording). Rationale and the
+  # measured distribution: DECISIONS.md D-F2-1 and reports/data_audit.md §7.
+  compare_points: 5000
+  corr_threshold: 0.95
+  # Cross-name pairs are compared only inside one domain_goswami and only when
+  # the two lengths differ by at most `cross_length_tol` (relative to the
+  # longer one). Same-name pairs are always compared.
+  cross_length_tol: 0.01

@@ -2,7 +2,7 @@
 
 Working repository for the study described in `TSAD-XAI_파이프라인_설계서.md`.
 
-## Task A — UCR data-lineage audit (BRIEF §3) — DONE 2026-09-21
+## Task A — UCR data-lineage audit (BRIEF §3) — DONE 2026-09-21; follow-up F1–F7 2026-09-22
 
 Reproduce (needs network once, for the 184 MB official zip and the Goswami repo):
 
@@ -12,7 +12,43 @@ python scripts/01_download.py && python scripts/02_audit.py
 python -m pytest tests -q
 ```
 
-`scripts/03_gate1.py` / `04_report.py` (Tasks B, C) do not exist yet.
+**Exit codes of `02_audit.py`:** 0 clean · 1 WARN · 2 STOP. On the unmodified archive it exits
+**0** since the researcher decisions of 2026-09-22 (`docs/DECISIONS.md` D-F2-2, D-F3-4): the
+follow-up brief's STOP-2 (recording re-use across names, §7d) and STOP-3 (123 ECG4, §8) are
+resolved and the related flags are INFO.
+
+## Task B — TSB-AD safe wrapper (BRIEF §4) — DONE 2026-09-22
+
+| artefact | what |
+|---|---|
+| `docs/TSBAD_INTERNALS.md` | B1: the IForest path in TSB-AD 1.5 traced with line numbers + measurements; benchmark HP trace |
+| `src/detectors/` | `base.py` (`DetectorError`, `FittedDetector`, `fit_detector`, B3 `validate_scores`), `iforest.py` (fit once / `decision_function` many, `normalize=False` forced, seed via `random_state`), `legacy.py` (pre-Task-B `ScoreFn`, re-exported) |
+| `src/data/ucr.py::slice_fit` | the single place that applies `fit_on` (`train_prefix` / `full`) |
+| `configs/detectors.yaml` | benchmark-traced defaults (window 100, 200 trees, `max_features` int 1), the two researcher variants (`max_features` 1 vs 1.0, `fit_on`), seeds, `constant_score` |
+| `src/runlog.py` | env header with TSB-AD source hashes; `CallLog` → `runs/<run_id>/calls.jsonl`, `failures.jsonl` |
+| `environment.yml`, `environment.server.yml`, `*.lock.*` | Mac/CPU vs CUDA server; lock files from a fresh build (`docs/SETUP.md`) |
+| `tests/` | B6: `test_wrapper_errors`, `test_wrapper_determinism`, `test_fit_score_consistency` (bitwise equality with TSB-AD's own path, and the `normalize=True` mismatch reproduced), `test_padding`, `test_slice_fit`, `test_runlog` — 114 tests pass in the yml-built env |
+
+## Task C — Gate 1 (BRIEF §5) — RUN 2026-09-22, **NOT MET → STOP (§7-6)**
+
+```bash
+python scripts/03_gate1.py --workers 4      # 250 × (fit_on 2 × max_features 2 × seeds 3) = 3,000 fits, ~12 min on the Mac
+python scripts/04_report.py                 # reports/gate1.md; exit 3 = gate not met
+```
+
+| artefact | what |
+|---|---|
+| `src/gate1.py` | pre-registered criteria P1 (99th-percentile of normal test scores, buffer 0 / w) and P2 (archive rule + BRIEF rule) |
+| `results/gate1/detection.csv` (committed) / `scores/*.npy` (1.7 GB, ignored) / `summary.json` | per series × condition results; raw scores kept for the Artifact Index |
+| `reports/gate1.md` | judgement, per-condition table, domain / variant / subset breakdowns, seed variance, paired comparisons, runtime, failures |
+| `runs/<run_id>/` (ignored) | `calls.jsonl` (6,000 calls, 0 failures), `failures.jsonl`, `env.txt` |
+
+Headline (`reports/gate1.md`): primary condition (`train_prefix`, `max_features=1`, buffer = w)
+P1 = **28.4 %** (seed median) — below the 50 % gate; every condition is below it (best:
+`full` / `max_features=1.0`, 39.2 %). Detector replacement is the researcher's decision.
+
+Data terms: the archive carries no licence; raw series are never committed — download the official
+zip and let `01_download.py` verify it against `data/raw/ucr/CHECKSUMS.sha256` (`docs/DATA_LICENSE.md`).
 
 | artefact | what |
 |---|---|
@@ -25,12 +61,25 @@ python -m pytest tests -q
 | `configs/conventions.yaml` | the index convention in force (D3) and its evidence |
 | `configs/goswami_entity_to_family.json` | Goswami's own UCR domain mapping, with commit/file/line |
 | `reports/figures/index_convention/` | plots of the 20 shortest anomalies under both index readings |
+| `reports/recording_groups.csv` | F2: every compared pair (same-name + cross-name within domain/±1 % length), r and verdict |
+| `configs/stats.yaml`, `configs/subsets.yaml`, `configs/sentinels.yaml` | F2/F4/F3 parameters: unit of analysis (`name_group`), subset filters, sentinel rules |
+| `data/derived/sentinels/<num>.npy` | F3: exact −999 indices outside the GT, per series (0-based; empty for 227 series) |
+| `reports/figures/sentinels/` | F3: −999 positions in a plain series vs its DISTORTED/NOISE twins |
+| `docs/briefs/BRIEF_A-followup.md` | the follow-up brief (F1–F7, STOP-1..3) |
 
 Headline results: local copy ≡ official archive (266/266 files identical); 250 series parse,
 load, and pass every A3 check (0 STOP, 0 WARN); the filename fields are documented by the
 archive's own slides as MATLAB 1-based inclusive indices (`[begin-1, end)` in 0-based
 half-open form) — set as the default in `configs/conventions.yaml`, **researcher sign-off
-pending (D3)**; non-medical subset = 100 / 59 without DISTORTED.
+pending (D3)** → approved 2026-09-22 (D-A2-3); non-medical subset = 100 / 59 without DISTORTED.
+
+Follow-up headline (2026-09-22, all numbers from `reports/data_audit.md` §7–§9): 100 `name_group`s
+vs 89 `content_group`s — 18 content groups span several names because the archive re-used one
+recording with different injected anomalies → **unit of analysis = `content_group`** (D-F2-2),
+`name_group` for sensitivity; the 23 series containing −999 are ±2047-scale signals in which −999
+is an ordinary sample (0 of 823 points are local spikes at k=10) → **treated as normal data**
+(D-F3-4), `no_sentinel` kept as a sensitivity subset; `physical` = 42 series / 7 content groups,
+`non_medical` = 100 / 22 (both descriptive only); legacy loader equivalence holds on 250/250 (F5).
 
 ---
 

@@ -55,7 +55,7 @@ from contextlib import redirect_stdout
 
 import numpy as np
 
-from .compat import patch_tsb_ad
+from src.compat import patch_tsb_ad
 
 _PATCHED = False
 

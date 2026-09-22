@@ -18,13 +18,34 @@
 | `08_DATA_LICENSE.md` | 아카이브가 라이선스에 대해 (안) 말하는 것 | A1 |
 | `09_conventions.yaml` | 현재 적용 중인 인덱스 규약과 그 근거 (D3) | A2, §8 |
 | `10_pytest_result.txt` | 테스트 결과 요약 | §9 |
+| `11_recording_groups.csv` | F2: 비교한 1,037쌍 전부 — 상관값과 판정 (`01_data_audit.md` §7의 원자료) | 후속 F2 |
+| `12_stats.yaml` / `13_subsets.yaml` / `14_sentinels.yaml` | 분석 단위·서브셋·sentinel 설정값 | 후속 F2/F4/F3 |
+| `15_BRIEF_A-followup.md` | 후속 브리프 원문 | — |
+| `figures/sentinels/` | −999 위치: plain vs DISTORTED/NOISE 쌍둥이 (123, 184, 185) | 후속 F3 |
+| `16_TSBAD_INTERNALS.md` | TSB-AD 1.5 IForest 경로 소스 추적(줄 번호·실측), 벤치마크 HP 추적 | B1 |
+| `17_detectors.yaml` | 탐지기 기본값(벤치마크 추적값)과 연구자 변형(max_features, fit_on) | B2 |
+| `18_gate1.md` | **게이트 1 판정** — 조건별 성공률, 도메인/변형/서브셋 분해, seed 분산, 짝 비교 | C3–C4 |
+| `19_gate1_detection.csv` | 시리즈 × 조건(12) × P1/P2 원자료 3,000행 | C4 |
+| `20_SETUP.md` | Mac/서버 환경 절차, 새 env 검증 기록 | §2 |
 
-## 연구자 결정 대기 (BRIEF §8)
+## 게이트 1 (2026-09-22) — **미달, STOP (BRIEF §7-6)**
 
-- **D3 인덱스 규약** — `01_data_audit.md` §6과 `figures/`를 보고 `matlab_1based_inclusive`를 승인하거나
-  `tsad-xai/configs/conventions.yaml`에서 바꾸고 `02_audit.py`를 다시 실행.
-- **is_medical에서 Gait/EPG를 비의료로 둔 기본값** — `07_DECISIONS.md` D-A5-3.
-- **라이선스** — CC BY-NC 4.0 표기의 출처 확인 (`08_DATA_LICENSE.md`).
+`18_gate1.md` §1–§2: 사전 등록 조건(`fit_on=train_prefix`, `max_features=1`, buffer=w) P1 = **28.4%**(seed 중앙값) < 50%.
+네 조건 전부 50% 미만(최고 `full`/`max_features=1.0` 39.2%). 탐지기 교체·기준 변경은 연구자 결정.
+
+## 후속 조치(2026-09-22) — `01_data_audit.md` §7–§9, 결정 반영 완료
+
+- **STOP-2 → 해제 (D-F2-2):** `content_group`(89)이 주 분석 단위, `name_group`(100)은 민감도 분석.
+  전체 250이 검정 대상; `non_medical`(22그룹)·`physical`(7그룹)은 기술통계.
+- **STOP-3 / F3 → 해제 (D-F3-4):** −999는 결측이 아닌 정상 측정값. 주 분석에서 제외하지 않음. 123 ECG4 조치 없음.
+  `no_sentinel` 서브셋과 `data/derived/sentinels/`는 민감도 분석용으로 유지.
+- 관련 플래그 3종은 INFO로 내려 `02_audit.py`는 exit 0.
+
+## 연구자 결정 (BRIEF §8)
+
+- **D3 인덱스 규약** — 2026-09-22 승인 (`07_DECISIONS.md` D-A2-3, `09_conventions.yaml` `approved`).
+- **is_medical에서 Gait/EPG를 비의료로 둔 기본값** — 유지, `physical` 서브셋 별도 정의 (D-A5-3, D-A5-4).
+- **라이선스** — 확정 (D-A1-4, `08_DATA_LICENSE.md`).
 
 ## 직접 재현하기
 

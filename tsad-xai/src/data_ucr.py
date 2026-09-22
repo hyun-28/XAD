@@ -48,7 +48,14 @@ module was written in. The parser is tested against the documented format only.
 """
 import os
 import re
+import sys
 import numpy as np
+
+# Index arithmetic goes through the single convention constant (BRIEF A2;
+# BRIEF_A-followup F5). Legacy module: keep the sys.path shim so the scripts
+# that import it as `src.data_ucr` from the repo root keep working.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from src.data.conventions import active_convention, to_half_open  # noqa: E402
 
 FNAME = re.compile(
     r"^(?P<idx>\d+)_UCR_Anomaly_(?P<name>.+?)_"
@@ -78,8 +85,13 @@ def load_file(path):
         raise ValueError(f"filename does not match the UCR pattern: {path}")
     x = np.loadtxt(path).astype(float).ravel()
     y = np.zeros(len(x), dtype=int)
-    lo = max(0, meta["anom_start"] - 1)          # archive indices are 1-based
-    hi = min(len(x), meta["anom_end"])
+    # F5: was `lo = anom_start - 1  # archive indices are 1-based` (an unverified
+    # hard-code). Now the documented convention (configs/conventions.yaml, D-A2-3)
+    # via conventions.py; tests/test_legacy_equivalence.py proves the two agree
+    # on all 250 files, which keeps the R5 / exp_a dry-run results valid.
+    lo, hi = to_half_open(meta["anom_start"], meta["anom_end"], active_convention())
+    if not (0 <= lo < hi <= len(x)):
+        raise ValueError(f"GT interval [{lo}, {hi}) outside series of length {len(x)}: {path}")
     y[lo:hi] = 1
     meta = dict(meta, length=len(x), anomaly_ratio=float(y.mean()),
                 n_segments=int((np.diff(np.r_[0, y, 0]) == 1).sum()))

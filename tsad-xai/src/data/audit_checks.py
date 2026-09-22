@@ -26,6 +26,14 @@ SEVERITY = {
     "DOMAIN_OFFICIAL_NA": "INFO",
     "DOMAIN_DISAGREE": "INFO",
     "HAS_MINUS999": "INFO",         # legacy missing-value sentinel present (slide 46)
+    # --- BRIEF_A-followup (2026-09-22) ---
+    # All three were WARN/STOP until the researcher's decisions of 2026-09-22
+    # (DECISIONS.md D-F2-2, D-F3-4): -999 is an ordinary measurement, not a
+    # missing-value marker, and content_group is the unit of analysis. They
+    # remain in the manifest as INFO so the facts stay visible.
+    "SENTINEL_IN_NORMAL": "INFO",   # F3: exact -999 in the training prefix or the normal test region
+    "SENTINEL_IN_GT_UNDOCUMENTED": "INFO",  # F3: exact -999 inside GT, deck silent on -999 (123 ECG4)
+    "CONTENT_GROUP_CROSSES_NAME": "INFO",   # F2: content_group spans >1 name_group (18 groups)
 }
 
 

@@ -19,6 +19,8 @@ from pathlib import Path
 
 import numpy as np
 
+from src.data.conventions import train_prefix_stop
+
 UCR_RE = re.compile(
     r"^(?P<num>\d{3})_UCR_Anomaly_(?P<name>.+)_(?P<train_end>\d+)_(?P<begin>\d+)_(?P<end>\d+)\.txt$"
 )
@@ -125,3 +127,27 @@ def scan_archive(fulldata_dir: Path, expected_n: int) -> list[UcrMeta]:
         missing = sorted(set(range(1, expected_n + 1)) - set(nums))
         raise RuntimeError(f"numbering not 001..{expected_n:03d}: duplicates={dup} missing={missing}")
     return metas
+
+
+FIT_ON = ("train_prefix", "full")
+
+
+def slice_fit(x: np.ndarray, meta: UcrMeta, fit_on: str) -> tuple[np.ndarray, int]:
+    """The ONLY place that decides what a detector is fitted on (BRIEF B2, D-B2-3).
+
+    fit_on = "train_prefix": x[:train_end] — the archive's anomaly-free prefix
+             (slide 5 "From 1 to X is training data"; D-A2-2: convention-free).
+    fit_on = "full":         the whole series — TSB-AD's run_IForest behaviour.
+    Returns (x_fit, n_fit); x_fit is a read-only view, never a modified copy.
+    """
+    if fit_on not in FIT_ON:
+        raise ValueError(f"fit_on must be one of {FIT_ON}, got {fit_on!r}")
+    x = np.asarray(x)
+    if x.ndim != 1:
+        raise ValueError(f"expected a 1-D series, got shape {x.shape}")
+    if not (0 < meta.train_end_raw < len(x)):
+        raise ValueError(f"{meta.filename}: train_end {meta.train_end_raw} outside (0, {len(x)})")
+    n_fit = train_prefix_stop(meta.train_end_raw) if fit_on == "train_prefix" else len(x)
+    x_fit = x[:n_fit]
+    x_fit.setflags(write=False)
+    return x_fit, int(n_fit)

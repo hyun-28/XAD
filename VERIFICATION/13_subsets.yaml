@@ -1,0 +1,23 @@
+# Analysis subsets (BRIEF_A-followup F4; DECISIONS D-A5-4).
+#
+# Each subset is a mapping of filters that are ANDed. Filter forms, applied to
+# manifest columns (src/data/subsets.py):
+#   <column>_in:     [values]   column value in the list
+#   <column>_not_in: [values]   column value not in the list
+#   <column>:        value      column value == value (compared as strings)
+# Subsets compose by intersection: subsets.py::select(manifest, ["physical", "plain_only"]).
+# n_groups is counted with configs/stats.yaml: unit_of_analysis.
+subsets:
+  all:          {}
+  non_medical:  {domain_goswami_not_in: [ABP, ECG, RESP]}
+  physical:     {domain_goswami_in: [Acceleration, Air Temperature, NASA, Power Demand]}
+  plain_only:   {variant: plain}
+  no_sentinel:  {sentinel_in_train_n: 0, sentinel_in_test_normal_n: 0}   # sensitivity analysis
+
+# Combinations reported in reports/data_audit.md §9 (besides every single subset).
+report_combinations:
+  - [non_medical, plain_only]
+  - [physical, plain_only]
+  - [non_medical, no_sentinel]
+  - [physical, no_sentinel]
+  - [physical, plain_only, no_sentinel]

@@ -20,10 +20,15 @@
 #   slide 6   a(200:280) "starts at 200 ... output 240"  -> MATLAB indices
 # Empirical corroboration: reports/figures/index_convention/ (02_audit.py).
 #
-# D3 status: default set from the documentary evidence above; the researcher
-# signs off (or overrides here). Changing this value and re-running
-# scripts/02_audit.py regenerates every derived index.
+# D3 status: APPROVED by the researcher on 2026-09-22 (DECISIONS.md D-A2-3).
+# Decisive empirical cases: 077/185 resperation11 (-999 spike), 092/200
+# tiltAPB4 (dropout) -- under the 0-based reading the spike falls outside the
+# labelled interval. 108 NOISEresperation2 (and twins 079, 187) judged not
+# decisive: both candidate points sit inside the noise. Changing the value
+# below and re-running scripts/02_audit.py regenerates every derived index;
+# clear `approved` if the value changes, the report prints whichever it finds.
 index_convention: matlab_1based_inclusive
+approved: 2026-09-22
 
 # train_end is NOT affected by the choice above: slide 5 says the first X
 # points are training data, so the training prefix is always x[:train_end].

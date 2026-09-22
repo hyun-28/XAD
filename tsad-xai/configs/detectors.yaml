@@ -1,0 +1,29 @@
+# Detector hyper-parameters (BRIEF Task B / C). Defaults are what TSB-AD's own
+# benchmark driver passes to IForest — traced in DECISIONS.md D-B2-1:
+#   benchmark_exp/Run_Detector_U.py:46,71 (GitHub 6beac72e, 2026-09-07) ->
+#   Optimal_Uni_algo_HP_dict['IForest'] = {'n_estimators': 200} (HP_list.py:293) ->
+#   run_Unsupervise_AD('IForest', data, n_estimators=200) ->
+#   run_IForest(data, slidingWindow=100, n_estimators=200, max_features=1, n_jobs=1)
+#   (model_wrapper.py:59; installed PyPI 1.5: :48). find_length_rank is computed
+#   by the driver (:62) but only handed to get_metrics (:87), never to IForest.
+iforest:
+  slidingWindow: 100        # fixed; the benchmark does not use find_length_rank for IForest
+  n_estimators: 200         # Optimal_Uni_algo_HP_dict (benchmark); run_IForest's own default is 100
+  n_jobs: 1
+  # RESEARCHER DECISION D-B2-2: max_features int 1 (one window column per tree,
+  # value-based isolation — the benchmark default) vs float 1.0 (all columns,
+  # shape-based isolation) are different models. Gate 1 runs both; the primary
+  # setting is chosen on the pre-registered detection criterion only.
+  max_features_variants: [1, 1.0]
+  max_features_primary: 1   # provisional = benchmark default; to be confirmed by gate 1 (Task C)
+  normalize: false          # FORCED. True breaks fit/score consistency in PyPI 1.5 (TSBAD_INTERNALS §4)
+
+# What the detector is fitted on (src/data/ucr.py::slice_fit). RESEARCHER DECISION D4.
+fit_on_variants: [train_prefix, full]
+fit_on_primary: train_prefix
+
+seeds: [0, 1, 2]
+
+# score() validation (BRIEF B3): a constant score vector is an error by default;
+# "flag" records it in the call log and returns the scores.
+constant_score: error

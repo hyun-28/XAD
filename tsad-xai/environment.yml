@@ -1,26 +1,28 @@
-# Verified against TSB_AD 1.5 (PyPI sdist inspected 2026-09-07).
+# TSAD-XAI environment — Mac (Apple Silicon, CPU/MPS) and any CPU-only Linux.
+# For the lab GPU server use environment.server.yml (same pins + CUDA build).
 #
-# THREE PINS ARE LOAD-BEARING. Do not relax them without rerunning tests/.
+# THREE PINS ARE LOAD-BEARING (docs/TSBAD_INTERNALS.md §4, §7). Do not relax
+# them without rerunning tests/.
 #
 #   scikit-learn <1.6
 #       TSB-AD's BaseDetector has no __sklearn_tags__. On sklearn>=1.6,
-#       check_is_fitted() raises AttributeError inside decision_function().
-#       CONFIRMED FAILING on sklearn 1.8.0:
-#         AttributeError: 'IForest' object has no attribute '__sklearn_tags__'
-#       fit() still works, so the failure only appears once you start scoring
-#       perturbations -- i.e. exactly when this project starts.
-#       Fallback if you cannot pin: src/compat.patch_tsb_ad()
-#
+#       check_is_fitted() raises AttributeError inside decision_function()
+#       (TSB_AD/models/IForest.py:238). fit() still works, so the failure only
+#       appears once you start scoring perturbations. Fallback if you cannot
+#       pin: src/compat.patch_tsb_ad().
 #   numpy <2
-#       TSB-AD's own setup.py declares numpy>=1.24.3,<2.0.
-#
+#       TSB-AD 1.5 declares numpy>=1.24.3,<2.0.
 #   python 3.11
 #       TSB-AD states support for >=3.8 up to 3.12; 3.11 is the tested middle.
 #
+# torch is required even for IForest: TSB_AD/utils/utility.py:19 imports
+# torch.nn at module level. 2.3.0 is the version TSB-AD's own README installs.
+#
+# Reproduce:  conda env create -f environment.yml && conda activate tsadxai
+# Exact resolution of the verified build: requirements.lock.txt (pip freeze).
 name: tsadxai
 channels:
   - pytorch
-  - nvidia
   - conda-forge
 dependencies:
   - python=3.11
@@ -34,18 +36,16 @@ dependencies:
   - statsmodels
   - tqdm
   - pytest
-  # GPU build for the RTX A6000. Swap for cpuonly if testing on a laptop.
+  - pyyaml
   - pytorch=2.3.0
   - torchvision=0.18.0
   - torchaudio=2.3.0
-  - pytorch-cuda=12.1
   - pip:
       - TSB-AD==1.5
       - python-pptx>=1.0   # Task A: slide-deck provenance extraction
-      - pyyaml
-      - captum          # Integrated Gradients / Saliency / Occlusion
+      - captum          # Integrated Gradients / Saliency / Occlusion (W3)
       # shap>=0.50 declares numpy>=2 -- incompatible with the numpy<2 pin above.
-      - shap<=0.49.1    # KernelSHAP
+      - shap<=0.49.1    # KernelSHAP (W3)
       - hurst>=0.0.5    # imported by TSB_AD/models/feature.py
       - arch>=5.3.1
       - stumpy>=1.12.0

@@ -1,0 +1,14 @@
+# −999 missing-value sentinel handling (BRIEF_A-followup F3; src/data/sentinels.py).
+value: -999.0
+# near-detection tolerance: |x − value| <= near_mad_factor × MAD(x[:train_end])
+near_mad_factor: 3.0
+# twin check (F3-2): local-outlier rule |x[i] − rolling_median| > twin_k × rolling_MAD,
+# window twin_window centred on i (odd)
+twin_window: 51
+twin_k: 10.0
+# exclusion indices (near, not in_gt), one int64 .npy per series
+derived_dir: data/derived/sentinels
+# figures: the plain series with the most sentinels that have at least one
+# same-length (non length_mismatch) twin
+figures_top_n: 3
+figures_dir: reports/figures/sentinels

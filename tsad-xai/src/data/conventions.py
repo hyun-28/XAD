@@ -38,6 +38,16 @@ def active_convention() -> IndexConvention:
                          f"allowed: {[c.value for c in IndexConvention]}") from e
 
 
+def approval_status() -> str:
+    """Researcher sign-off recorded in configs/conventions.yaml (`approved`).
+
+    Returns 'approved <date>' or 'sign-off pending'. Read by 02_audit.py so
+    the report's D3 line is generated, never hand-edited (BRIEF §1-4).
+    """
+    approved = load_yaml("conventions").get("approved")
+    return f"approved {approved}" if approved else "sign-off pending"
+
+
 def to_half_open(begin_raw: int, end_raw: int,
                  convention: IndexConvention) -> tuple[int, int]:
     """Raw filename (begin, end) -> 0-based half-open [start0, stop0)."""
