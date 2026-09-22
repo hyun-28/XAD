@@ -499,3 +499,72 @@ here are copied from script output (`reports/data_audit.md`,
   - P1 unchanged, buffer = that detector's w (D-C2-1 rule stands).
   - reporting in the same format as IForest (condition table, per-domain, content_group aggregation).
 - **Revert:** n/a.
+
+---
+
+# Task D — Šimić et al. metric port (BRIEF2, 2026-09-22)
+
+## D-D1-1 — `third_party/simic_cmi` is a pinned clone, git-ignored, fetched by a script
+
+- **What:** `https://github.com/perturbationeffect/cmi-am-validation-for-dl-ts-classifiers`
+  at commit `edc6a870b1a50fce3385bfce6a468583d696ea75` (verified against the remote's HEAD on
+  2026-09-22), cloned to `third_party/simic_cmi/`, never modified. Apache-2.0; the upstream
+  LICENSE travels with the clone.
+- **Why a clone and not a submodule:** the repository is **537 MB** (469 MB of trained models,
+  221 MB of UCR classification data). A submodule would make every `git clone` of this monorepo
+  pull it. `third_party/` is git-ignored and `scripts/00_fetch_simic.py` restores it at the
+  pinned commit; the tests skip cleanly when it is absent.
+- **Revert:** delete the directory, or convert to `git submodule add` at the same commit.
+
+## D-D1-2 — The original imports cleanly; no source extraction needed
+
+- **What:** BRIEF2 D1-3 allows extracting the function source if importing fails on
+  MongoDB/torch. Measured 2026-09-22: `utils/res_utils.py` imports only
+  os/numpy/matplotlib/seaborn/math, so `tests/test_simic_equivalence.py` imports the real
+  upstream functions. **MongoDB was not installed.** Only the pipeline scripts
+  (`identify_zero_class.py`, `results_analysis.py`) need pymongo/torch.
+- **Revert:** n/a.
+
+## D-D1-3 — Ported functions and deliberate divergences
+
+- **Ported** (`src/metrics/faithfulness_simic.py`): `decaying_degradation_score`,
+  `compute_dataset_dds`, `pes`, `CMI` (+ `cubic_weights` factored out). **Not ported:**
+  `degradation_score` (the non-decaying variant, unused by the paper's figures),
+  `rank_biserial`, `combined_mean/stddev`, plotting helpers.
+- **Equivalence:** 1,000 random curve pairs (length 2-60, values 0-100) — max |ours - theirs|
+  is exactly **0.0**, not merely within 1e-12; plus a 400 x 58 sign grid for CMI and 200
+  random subsets for PES. `tests/test_simic_equivalence.py`.
+- **Divergences (fail loud, BRIEF §1-1):** curves shorter than 2 points raise instead of
+  returning nan with a RuntimeWarning (upstream's `dds_max` is 0 there); unequal lengths,
+  non-finite values, empty DDS sets and `max_diff <= 0` raise. Every one is covered by a test
+  that also asserts the upstream behaviour it replaces.
+- **`max_diff`:** exposed, default 100 = upstream's hard-coded constant (`res_utils.py:73`).
+- **Revert:** n/a.
+
+## D-D2-1 — D7-D10 registered as undecided; `faithfulness_ad.py` is a stub
+
+- **D7 tracked quantity:** what scalar the AD perturbation curve reads off each score vector —
+  max inside the GT interval / mean inside it / max over the whole series / other. No AD twin of
+  "predicted-class probability" exists.
+- **D8 normalisation:** the original divides by 100 (a probability bound). IForest scores are
+  unbounded and not probabilities, so DDS leaves [-1, 1]. Candidates: min-max of the unperturbed
+  score, a training-region quantile, the score's IQR.
+- **D9 direction:** whether a falling score under MoRF counts as faithful. Zero-masking a
+  *normal* region already lowers IForest's score (W1 dry run, `docs/R5-SCREEN.md`), so the sign
+  convention is not self-evident.
+- **D10 coverage:** whether normal-series regions enter the curve at all; the original uses all
+  test samples, UCR has one anomaly per series.
+- **Status:** UNDECIDED. `src/metrics/faithfulness_ad.py` carries the signatures and docstrings
+  and raises `NotImplementedError`; nothing downstream may call it.
+- **Revert:** n/a.
+
+## D-D1-4 — Paper-vs-code comparison is PENDING: no PDF available
+
+- **What:** BRIEF2 D1-3 asks for a list of differences between the paper's Eq. 1-6 and the code.
+  The paper is not in the repository (`Šimić et al/` at the monorepo root is an empty folder,
+  created 2026-09-21) and was not supplied. The port therefore follows **the code**, as the
+  brief instructs, and `docs/SIMIC_PORT.md` lists the code-internal discrepancies that can be
+  checked without the paper (e.g. the CMI docstring says "same sign" while the branch is
+  `pes * dds <= 0`, so an exact zero also yields 0).
+- **Needed to close:** the PDF or a DOI/arXiv id.
+- **Revert:** n/a.

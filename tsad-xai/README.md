@@ -81,6 +81,22 @@ is an ordinary sample (0 of 823 points are local spikes at k=10) → **treated a
 (D-F3-4), `no_sentinel` kept as a sensitivity subset; `physical` = 42 series / 7 content groups,
 `non_medical` = 100 / 22 (both descriptive only); legacy loader equivalence holds on 250/250 (F5).
 
+## Task D — Šimić et al. metric port (BRIEF2) — D1/D2 DONE 2026-09-22
+
+```bash
+python scripts/00_fetch_simic.py            # pinned clone into third_party/ (537 MB, git-ignored)
+python -m pytest tests/test_simic_equivalence.py -q
+```
+
+| artefact | what |
+|---|---|
+| `src/metrics/faithfulness_simic.py` | DDS / PES / CMI reimplemented from `utils/res_utils.py` @ `edc6a870`; `max_diff` exposed, default 100 as upstream |
+| `tests/test_simic_equivalence.py` | 1,000 random curve pairs — max abs difference **exactly 0.0**; CMI sign grid; the brief's boundary cases |
+| `docs/SIMIC_PORT.md` | function map, code-internal discrepancies (C1–C5), equivalence evidence; **paper comparison pending — no PDF (D-D1-4)** |
+| `src/metrics/faithfulness_ad.py` | AD adaptation: signatures + `NotImplementedError`; D7–D10 registered undecided |
+
+D3 (Wafer model reproduction, `reports/wafer_zero_class.csv`) is not done yet.
+
 ---
 
 **Status: environment verified, code tested, experiments not yet run on real data.**

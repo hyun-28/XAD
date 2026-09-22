@@ -29,6 +29,7 @@ cp "$src/configs/detectors.yaml"                   "$here/17_detectors.yaml"
 cp "$src/reports/gate1.md"                         "$here/18_gate1.md"
 cp "$src/results/gate1/detection.csv"              "$here/19_gate1_detection.csv"
 cp "$src/docs/SETUP.md"                            "$here/20_SETUP.md"
+cp "$src/docs/SIMIC_PORT.md"                       "$here/21_SIMIC_PORT.md"
 mkdir -p "$here/figures/sentinels"
 cp "$src/reports/figures/sentinels/"*.png          "$here/figures/sentinels/"
 # PYTHON defaults to the tsadxai env interpreter; override with PYTHON=... if needed.

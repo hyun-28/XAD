@@ -1,0 +1,81 @@
+# Šimić et al. metric port — function map and code/paper differences (BRIEF2 §D1)
+
+Upstream: `https://github.com/perturbationeffect/cmi-am-validation-for-dl-ts-classifiers`
+@ `edc6a870b1a50fce3385bfce6a468583d696ea75` (verified as the remote HEAD on 2026-09-22),
+Apache-2.0. Fetched by `scripts/00_fetch_simic.py` into `third_party/simic_cmi/`
+(git-ignored, 537 MB; DECISIONS D-D1-1) and never modified.
+
+Our port: `src/metrics/faithfulness_simic.py`. Equivalence: `tests/test_simic_equivalence.py`.
+
+## 1. Function map
+
+| ours (`faithfulness_simic.py`) | upstream (`utils/res_utils.py`) | note |
+|---|---|---|
+| `decaying_degradation_score(morf, lerf, *, max_diff=100)` | `decaying_degradation_score` :51-78 | `max_diff` exposes the hard-coded `100` (:73); the default reproduces upstream |
+| `compute_dataset_dds(morf_curves, lerf_curves, *, max_diff=100)` | `compute_dataset_dds` :31-49 | returns `np.ndarray` of per-sample DDS |
+| `pes(dds_values)` | `pes` :81-99 | Kerby's simple difference `f − u` |
+| `cmi(dds, pes_value)`, alias `CMI` | `CMI` :176-191 | harmonic mean of magnitudes, else 0 |
+| `cubic_weights(n)` | inline in `decaying_degradation_score` :67-68 | factored out so the weighting is testable on its own |
+
+**Not ported** (out of BRIEF2's scope, listed so nobody assumes they are missing by accident):
+`degradation_score` :7-29 (the non-decaying variant), `rank_biserial` :101-115,
+`combined_mean` :117-141, `combined_stddev` :143-174, `get_row_id`, `create_heatmap`,
+`save_results_df`, `plot_barh_on_axis` (plotting/reporting helpers).
+
+## 2. What the upstream code actually computes
+
+```python
+diffed         = lerf - morf                       # :65
+linear_weights = arange(n, 0, -1) / n              # :67
+cubic_weights  = linear_weights ** 3               # :68
+dds            = average(diffed, weights=cubic)    # :70
+max_diffed     = zeros_like(diffed); max_diffed[1:] = 100   # :72-73
+dds_max        = average(max_diffed, weights=cubic)         # :74
+return dds / dds_max                               # :76
+```
+- The **first curve point is unperturbed in both curves**, so it cannot contribute a
+  difference; `max_diffed[0] = 0` encodes exactly that, and it is also why a length-1 curve
+  has `dds_max == 0`.
+- `100` is the normalisation constant: the code assumes the model emits the predicted class'
+  probability scaled to 0-100 (comment on :73 and :24).
+- PES counts strict inequalities, so an exact `DDS == 0` counts as neither favourable nor
+  unfavourable and `|PES| < 1` whenever any DDS is 0.
+- CMI branches on `pes * dds <= 0` (:187).
+
+## 3. Code-internal discrepancies (checkable without the paper)
+
+| # | where | what |
+|---|---|---|
+| C1 | `CMI` docstring (:178) vs branch (:187) | the docstring says "harmonic mean … if they have the same sign. Otherwise 0", but the branch is `pes * dds <= 0`, so an exact **zero** in either argument also returns 0 — "same sign" and "product > 0" differ exactly at 0. We follow the **code**. |
+| C2 | `decaying_degradation_score` :72 | `np.zeros_like(diffed)` inherits `diffed`'s dtype; with integer-valued curves passed as Python ints, `max_diffed` is an int array. Harmless here (the ratio is float), but it means the constant is silently truncated if someone passes `max_diff=0.5` upstream. Our port forces float64 first. |
+| C3 | `pes` :95-96 | `len(dds_vals[dds_vals > 0])` requires an array; a plain list is converted on :92-93 only if `isinstance(x, list)` — a tuple or generator raises. Our port uses `np.asarray` unconditionally. |
+| C4 | `compute_dataset_dds` :43 | the length check is an `assert`, i.e. it disappears under `python -O`. Our port raises `ValueError`. |
+| C5 | length-1 curves | upstream divides by `dds_max == 0` → `nan` + `RuntimeWarning`, silently propagating into dataset means. Our port raises (BRIEF §1-1). |
+
+## 4. Paper comparison — **PENDING, blocked**
+
+BRIEF2 §D1-3 asks for a list of differences between the paper's Eq. 1-6 and the code. **The
+paper is not available in this repository**: `Šimić et al/` at the monorepo root is an empty
+directory (created 2026-09-21) and no PDF/DOI/arXiv id was supplied. The port therefore follows
+the code, as the brief instructs for disagreements, and this section stays open. To close it,
+drop the PDF in that folder (or give the identifier) and the Eq. 1-6 comparison can be added
+here. Recorded as DECISIONS **D-D1-4**.
+
+## 5. Equivalence evidence (`tests/test_simic_equivalence.py`, 11 tests)
+
+- 1,000 random curve pairs, length 2-60, values 0-100 (BRIEF2's specification): max absolute
+  difference against the upstream functions is **exactly 0.0** — the assertion is
+  `np.allclose(atol=1e-12, rtol=0)` *and* `max|Δ| == 0`.
+- `compute_dataset_dds` over the same 1,000 pairs; `pes` over 200 random subsets;
+  `CMI` over a 400 × 58 grid covering both signs, exact zeros, ±1 and ±1e-12.
+- Boundary cases required by the brief: MoRF = LeRF → DDS = 0, PES = 0, CMI = 0; opposite
+  signs → CMI = 0; fully reversed curves → DDS < 0 with CMI > 0; saturated curves → DDS = ±1.
+- The upstream functions are imported from the pinned clone directly — they need only
+  numpy/matplotlib/seaborn/math, so **MongoDB was never installed** (D-D1-2). The module skips
+  if the clone is absent.
+
+## 6. Anomaly-detection adaptation
+
+Not implemented, by instruction (BRIEF2 §D2). `src/metrics/faithfulness_ad.py` holds the
+signatures and raises `NotImplementedError`; the four blocking choices are registered as
+**D7-D10** in `docs/DECISIONS.md` (tracked quantity, normalisation, direction, coverage).
