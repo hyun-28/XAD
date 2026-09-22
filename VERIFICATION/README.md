@@ -8,6 +8,7 @@
 
 | 파일 | 검토 포인트 | BRIEF |
 |---|---|---|
+| `00_W1_REPORT.md` | **W1 수행 보고서 (랩미팅용)** — 무엇을 했고 무엇이 나왔는지 서술 요약 | 전체 |
 | `01_data_audit.md` | A1 체크섬 대조표, A3 위반 수, 도메인×DISTORTED 교차표, 비의료 서브셋 크기, 이상 길이 분포, GT 불일치, **§6 인덱스 규약 근거** | A6 |
 | `02_ucr_manifest.csv` | 250행. `start0/stop0`는 `09_conventions.yaml`의 규약으로 변환된 값. A4 컬럼은 `NA`(미실행) | A6 |
 | `03_CHECKSUMS.sha256` | 공식 zip + 파일별 SHA256 | A1 |
