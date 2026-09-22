@@ -43,9 +43,30 @@ python scripts/04_report.py                 # reports/gate1.md; exit 3 = gate no
 | `reports/gate1.md` | judgement, per-condition table, domain / variant / subset breakdowns, seed variance, paired comparisons, runtime, failures |
 | `runs/<run_id>/` (ignored) | `calls.jsonl` (6,000 calls, 0 failures), `failures.jsonl`, `env.txt` |
 
-Headline (`reports/gate1.md`): primary condition (`train_prefix`, `max_features=1`, buffer = w)
-P1 = **28.4 %** (seed median) — below the 50 % gate; every condition is below it (best:
-`full` / `max_features=1.0`, 39.2 %). Detector replacement is the researcher's decision.
+Headline: **IForest failed the gate** — primary condition (`train_prefix`, `max_features=1`,
+buffer = w) P1 = **28.4 %** (seed median), and every condition is below 50 % (best:
+`full` / `max_features=1.0`, 39.2 %). Per the pre-registered rule the detector was replaced
+(D-C5-1/2).
+
+## Gate 1, second detector — MatrixProfile — **PASS** (2026-09-22)
+
+```bash
+python scripts/03_gate1.py --detector MatrixProfile --workers 4   # 250 × 2 conditions, ~85 min
+python scripts/04_report.py --detector MatrixProfile              # reports/gate1_MatrixProfile.md
+```
+
+TSB-AD's `MatrixProfile` is self-join only and has no `decision_function`, so the AB-join the
+gate needs is built on stumpy directly and proved identical to TSB-AD's path in the self-join
+setting (`max|Δ| = 0.0`; D-C5-3, `src/detectors/matrixprofile.py`).
+
+| condition | P1 (buffer = w) | P2 archive | window-support diagnostic |
+|---|---|---|---|
+| `train_prefix` (AB-join vs the training prefix) — **primary** | **79.2 %** | 54.0 % | 83.2 % |
+| `full` (self-join) | 82.8 % | 58.8 % | 86.8 % |
+
+Window = `find_length_rank(rank=1)` per series (min 6, median 125, max 276), logged per row.
+Deterministic: the run was repeated and all 35 shared columns matched. The pre-registered
+training-region sanity check holds (max self-match score 3.3e-04, D-C5-4).
 
 Data terms: the archive carries no licence; raw series are never committed — download the official
 zip and let `01_download.py` verify it against `data/raw/ucr/CHECKSUMS.sha256` (`docs/DATA_LICENSE.md`).
@@ -92,7 +113,7 @@ python -m pytest tests/test_simic_equivalence.py -q
 |---|---|
 | `src/metrics/faithfulness_simic.py` | DDS / PES / CMI reimplemented from `utils/res_utils.py` @ `edc6a870`; `max_diff` exposed, default 100 as upstream |
 | `tests/test_simic_equivalence.py` | 1,000 random curve pairs — max abs difference **exactly 0.0**; CMI sign grid; the brief's boundary cases |
-| `docs/SIMIC_PORT.md` | function map, code-internal discrepancies (C1–C5), equivalence evidence; **paper comparison pending — no PDF (D-D1-4)** |
+| `docs/SIMIC_PORT.md` | function map, code-internal discrepancies (C1–C5), **paper Eq. 1–6 vs code** (DOI 10.1038/s41598-025-09538-2): Eq. 6's branch is `≥0` where the code has `<=0` — opposite conditions, same numbers (D-D1-4) |
 | `src/metrics/faithfulness_ad.py` | AD adaptation: signatures + `NotImplementedError`; D7–D10 registered undecided |
 
 D3 (Wafer model reproduction, `reports/wafer_zero_class.csv`) is not done yet.

@@ -30,10 +30,10 @@ __pycache__/
 
 # --- per-run call logs (BRIEF B5); summaries go to reports/ ---
 runs/
-results/gate1/scores/
-results/gate1/summary.json
+results/gate1/*/scores/
+results/gate1/*/summary.json
 !results/gate1/
-!results/gate1/detection.csv
+!results/gate1/*/detection.csv
 
 # --- BRIEF2 D1: pinned upstream clone, 537 MB (scripts/00_fetch_simic.py) ---
 third_party/

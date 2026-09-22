@@ -14,3 +14,6 @@ venv/
 # --- macOS / Office temp ---
 .DS_Store
 ~$*
+
+# --- the Šimić et al. paper PDF (15 MB, open access; fetch from DOI 10.1038/s41598-025-09538-2) ---
+"Šimić et al"/

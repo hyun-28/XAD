@@ -558,13 +558,85 @@ here are copied from script output (`reports/data_audit.md`,
   and raises `NotImplementedError`; nothing downstream may call it.
 - **Revert:** n/a.
 
-## D-D1-4 — Paper-vs-code comparison is PENDING: no PDF available
+## D-D1-4 — Paper-vs-code comparison DONE (2026-09-22; the PDF was fetched)
 
-- **What:** BRIEF2 D1-3 asks for a list of differences between the paper's Eq. 1-6 and the code.
-  The paper is not in the repository (`Šimić et al/` at the monorepo root is an empty folder,
-  created 2026-09-21) and was not supplied. The port therefore follows **the code**, as the
-  brief instructs, and `docs/SIMIC_PORT.md` lists the code-internal discrepancies that can be
-  checked without the paper (e.g. the CMI docstring says "same sign" while the branch is
-  `pes * dds <= 0`, so an exact zero also yields 0).
-- **Needed to close:** the PDF or a DOI/arXiv id.
+- **What:** BRIEF2 D1-3 asks for the differences between the paper's Eq. 1-6 and the code.
+  The paper is Šimić, Veas & Sabol, *Scientific Reports* 15:26607 (2025),
+  DOI 10.1038/s41598-025-09538-2, open access — downloaded 2026-09-22 to
+  `Šimić et al/Simic_2025_SciRep_s41598-025-09538-2.pdf`. Full comparison in
+  `docs/SIMIC_PORT.md` §4.
+- **Findings:** (P1) Eq. 1/2 are a weighted *sum* over probabilities in [0, 1]; the code is a
+  weighted *average* over a 0-100 scale. They reduce to the same normalised quantity — the
+  hard-coded 100 is a unit conversion, verified to 8.9e-16 on 2,000 random pairs; our `max_diff=1`
+  reproduces the paper's equations literally. (P2) **Eq. 6 branches on `DDS·PES ≥ 0`, the code on
+  `pes*dds <= 0` — the conditions are opposite**, differing exactly on the set `DDS·PES = 0`.
+  Both yield 0 there (the paper's harmonic branch tends to 0 as `|DDS|⁻¹ → ∞`), so the numbers
+  agree, but Eq. 6 taken literally raises `ZeroDivisionError` in Python. Per BRIEF2 we implement
+  the **code**. (P3) Eq. 3-5 (PES) match the code exactly, zeros in neither count.
 - **Revert:** n/a.
+## D-C5-6 — P1 alignment handling, fixed BEFORE the MatrixProfile verdict was read (2026-09-22T13:02:58Z, researcher)
+
+- **Recorded at:** 2026-09-22T13:02:58Z (UTC). At this moment the MatrixProfile gate run
+  (`runs/gate1_MatrixProfile_20260922`) was still in progress — 222 of 250 series scored — and
+  **no success rate had been computed or looked at**: `scripts/04_report.py --detector MatrixProfile`
+  had not been run. The rule below is therefore pre-registered with respect to the verdict.
+- **Rule:**
+  1. The verdict is the pre-registered P1 (`max(score[start0:stop0])`), unchanged.
+  2. `p1_support_bw` (D-C5-5) is reported as a **diagnostic** only.
+  3. If P1 and `p1_support_bw` fall on the same side of the 50 % gate, the verdict stands as
+     computed.
+  4. If **P1 < 50 % ≤ p1_support_bw**, that is a **STOP**: the IForest results are recomputed
+     under the same window-support criterion so both detectors can be read on one scale, and the
+     verdict is the researcher's, not Claude Code's.
+- **Why:** the alignment effect (a window score is written at `start + w//2`) can push an
+  anomaly's peak outside the interval P1 reads. Deciding in advance what that would mean prevents
+  the criterion from being chosen after seeing which one is kinder.
+- **Revert:** n/a (a record of a decision).
+
+## D12-a — Constant-subsequence flag added to the gate report (W2 prediction item)
+
+- **What:** per series, count the constant subsequences (σ = 0 over a length-w window) in the
+  **training region excluding the self-matching zone** — the region an AB-join scores against —
+  and report the counts in the gate report. Column `n_const_train` in `detection.csv`.
+- **Why (D12, traced in stumpy `core.py:1152-1167`):** both subsequences constant → D² = 0;
+  exactly one constant → D² = m, a fixed value independent of the data. A perturbation that makes
+  a window constant therefore either collapses the score to 0 (if the reference holds a constant
+  window) or snaps it to √m. Which of the two happens for a given series depends on whether its
+  reference region contains a constant window — hence the flag, registered now so W2's Artifact
+  Index predictions can be checked against it.
+- **This gate reports counts only.** No interpretation, no decision.
+- **Revert:** drop the column.
+
+## D-D3-1 — `primefac` removed from the reference env; a separate `tsadxai-simic` env for BRIEF2 D3 (2026-09-22T13:04:38Z, researcher)
+
+- **What happened:** `utils/vit/vit.py` in the pinned clone imports `primefac` at module level,
+  so the whole `utils.networks` registry (needed for all five Wafer architectures) fails without
+  it. It was installed with `pip install primefac` into **`tsadxai-w1`** — the reference env built
+  from `environment.yml` — which is exactly the env that must stay equal to what the yml resolves
+  to. `pypdf` had been added there too, to read the Šimić PDF.
+- **Fix:** both are removed from `tsadxai-w1`, which is restored to the `environment.yml`
+  resolution (verified by re-running the test suite and diffing `pip freeze` against
+  `requirements.lock.txt`). Upstream reproduction now runs in a separate env defined by
+  **`environment_simic.yml`** (`tsadxai-simic`): python 3.11, torch 2.3.0, primefac, captum.
+  `scripts/05_wafer_zero_class.py` is run with that interpreter.
+- **Why separate rather than adding it to environment.yml:** nothing in this project imports
+  `primefac` or the upstream networks; the gate and the metric port must not depend on the
+  upstream repository being installable.
+- **Revert:** `conda env remove -n tsadxai-simic`; delete `environment_simic.yml`.
+
+## D-C5-7 — MatrixProfile gate: PASS; D-C5-6 branch 3 applied (2026-09-22T15:26:01Z)
+
+- **Result:** primary condition (`fit_on=train_prefix`, AB-join, buffer = per-series w)
+  **P1 = 79.2 %** ≥ 50 % → **PASS**. The diagnostic `p1_support_bw` = 83.2 % is on the same side
+  of the gate, so D-C5-6 branch 3 applies: the verdict stands as computed and no recomputation of
+  the IForest results under the support criterion is required (branch 4 not triggered).
+- **Detector adopted:** MatrixProfile. Per D-C5-2 the lower-ranked candidates (Sub_PCA, KMeansAD)
+  are **not run**.
+- **IForest results retained** (D-C5-1): `reports/gate1_IForest.md`,
+  `results/gate1/IForest/detection.csv`, and the raw scores.
+- **Determinism verified:** the gate was run twice (the second time to add `n_const_train`);
+  all 35 shared columns of `detection.csv` are identical across the two runs.
+- **Runtime note:** 250 series x 2 conditions = 500 scoring calls in 5,012 s wall (4 workers);
+  the longest single call was 1,823 s (series 240/241, n = 900,000, w = 125). W2's ~500 calls per
+  series make the incremental scorer (W2-1) a prerequisite, not an optimisation.
+- **Revert:** `configs/detectors.yaml`; re-run `scripts/03_gate1.py --detector MatrixProfile`.

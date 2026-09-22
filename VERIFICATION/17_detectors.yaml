@@ -27,3 +27,22 @@ seeds: [0, 1, 2]
 # score() validation (BRIEF B3): a constant score vector is an error by default;
 # "flag" records it in the call log and returns the scores.
 constant_score: error
+
+# MatrixProfile — the gate-1 replacement detector after IForest failed (D-C5-1/2/3).
+# TSB-AD's own class is self-join only and has no decision_function
+# (TSB_AD/models/MatrixProfile.py, 48 lines, `fit` is its only method), so the
+# AB-join the researcher pre-registered is built on stumpy directly and proved
+# equivalent to TSB-AD's path in the self-join setting (tests/test_matrixprofile.py).
+matrixprofile:
+  # window = find_length_rank(x, rank=periodicity), per series, as the benchmark does
+  # (model_wrapper.run_MatrixProfile:80; HP_list.py:244 -> periodicity 1). Logged per series.
+  periodicity: 1
+  # fit_on -> mode mapping (D-C5-3 rules 1-2):
+  #   full          -> self_join (stumpy exclusion zone ceil(m/4); identical to TSB-AD)
+  #   train_prefix  -> ab_join   (T_A = x, T_B = x[:train_end], ignore_trivial=False)
+  mode_for_fit_on:
+    full: self_join
+    train_prefix: ab_join
+  # deterministic: a single seed is run and recorded for provenance only
+  seeds: [0]
+  constant_score: error

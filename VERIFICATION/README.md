@@ -24,8 +24,12 @@
 | `figures/sentinels/` | −999 위치: plain vs DISTORTED/NOISE 쌍둥이 (123, 184, 185) | 후속 F3 |
 | `16_TSBAD_INTERNALS.md` | TSB-AD 1.5 IForest 경로 소스 추적(줄 번호·실측), 벤치마크 HP 추적 | B1 |
 | `17_detectors.yaml` | 탐지기 기본값(벤치마크 추적값)과 연구자 변형(max_features, fit_on) | B2 |
-| `18_gate1.md` | **게이트 1 판정** — 조건별 성공률, 도메인/변형/서브셋 분해, seed 분산, 짝 비교 | C3–C4 |
-| `19_gate1_detection.csv` | 시리즈 × 조건(12) × P1/P2 원자료 3,000행 | C4 |
+| `18_gate1_IForest.md` | 게이트 1 IForest 판정(미달) — 조건별 성공률, 도메인/변형/서브셋 분해, seed 분산, 짝 비교 | C3–C4 |
+| `19_gate1_IForest_detection.csv` | 시리즈 × 조건(12) × P1/P2 원자료 3,000행 | C4 |
+| `22_gate1_MatrixProfile.md` | **게이트 1 MatrixProfile 판정** (교체 탐지기, D-C5-1/2/3) | C3–C4 |
+| `23_gate1_MatrixProfile_detection.csv` | 시리즈 × 조건(2) × P1/P2 + 학습 구간 sanity 원자료 | C4, D-C5-4 |
+| `24_wafer_zero_class.csv` | Wafer 25개 모델의 zero class + 테스트 정확도 재현 | BRIEF2 D3 |
+| `21_SIMIC_PORT.md` §4 | 논문 Eq. 1–6 vs 코드 대조 (PDF 확보 완료) | BRIEF2 D1-3 |
 | `20_SETUP.md` | Mac/서버 환경 절차, 새 env 검증 기록 | §2 |
 
 ## 게이트 1 (2026-09-22) — **미달, STOP (BRIEF §7-6)**

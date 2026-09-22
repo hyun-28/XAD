@@ -26,8 +26,11 @@ cp "$src/docs/briefs/BRIEF_A-followup.md"          "$here/15_BRIEF_A-followup.md
 # --- Task B / C (2026-09-22) ---
 cp "$src/docs/TSBAD_INTERNALS.md"                  "$here/16_TSBAD_INTERNALS.md"
 cp "$src/configs/detectors.yaml"                   "$here/17_detectors.yaml"
-cp "$src/reports/gate1.md"                         "$here/18_gate1.md"
-cp "$src/results/gate1/detection.csv"              "$here/19_gate1_detection.csv"
+cp "$src/reports/gate1_IForest.md"                 "$here/18_gate1_IForest.md"
+cp "$src/results/gate1/IForest/detection.csv"      "$here/19_gate1_IForest_detection.csv"
+cp "$src/reports/gate1_MatrixProfile.md"           "$here/22_gate1_MatrixProfile.md"
+cp "$src/results/gate1/MatrixProfile/detection.csv" "$here/23_gate1_MatrixProfile_detection.csv"
+cp "$src/reports/wafer_zero_class.csv"             "$here/24_wafer_zero_class.csv"
 cp "$src/docs/SETUP.md"                            "$here/20_SETUP.md"
 cp "$src/docs/SIMIC_PORT.md"                       "$here/21_SIMIC_PORT.md"
 mkdir -p "$here/figures/sentinels"

@@ -1,0 +1,42 @@
+# Šimić et al. reproduction environment (BRIEF2 §D3) — SEPARATE from tsadxai.
+#
+# Why separate (DECISIONS D-D3-1): running the upstream Wafer models needs packages
+# this project does not use — `primefac` (imported by utils/vit/vit.py, so the whole
+# `utils.networks` registry fails without it) and captum for the full pipeline. The
+# reference env `tsadxai` must stay exactly what environment.yml resolves to, so
+# nothing from the upstream repository is installed into it.
+#
+# The upstream repo's own installer (install_conda_dependencies.sh) targets
+# cudatoolkit=11.3; this file is the CPU/Apple-Silicon equivalent with the torch
+# version this project already pins. The trained models are plain state_dicts, so
+# they load across torch versions (verified 2026-09-22 with torch 2.3.0).
+#
+#   conda env create -f environment_simic.yml && conda activate tsadxai-simic
+#   python scripts/05_wafer_zero_class.py
+#
+# The pinned clone itself is fetched by scripts/00_fetch_simic.py (git-ignored).
+name: tsadxai-simic
+channels:
+  - pytorch
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - numpy>=1.24.3,<2.0
+  - scipy
+  - pandas>=2.0.3,<3.0
+  - matplotlib>=3.7.5
+  - seaborn
+  - scikit-learn
+  - pytorch=2.3.0
+  - einops            # utils/vit/vit.py
+  - tslearn           # utils/utils.py
+  - pip:
+      - primefac        # utils/vit/vit.py imports it at module level
+      - captum          # needed only by the full upstream pipeline, not by D3
+      - pyyaml
+# Derived from the upstream install_conda_dependencies.sh (which targets
+# cudatoolkit=11.3) minus what D3 does not need: jupyter, pymongo, imageio,
+# hyperopt, scikit-posthocs, tsfresh. `tsai` is imported by utils/utils.py only
+# inside a function that D3 never calls, so it is left out deliberately; if a
+# later task hits that path, add it here.

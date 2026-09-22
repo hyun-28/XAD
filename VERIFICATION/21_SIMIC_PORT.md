@@ -52,14 +52,39 @@ return dds / dds_max                               # :76
 | C4 | `compute_dataset_dds` :43 | the length check is an `assert`, i.e. it disappears under `python -O`. Our port raises `ValueError`. |
 | C5 | length-1 curves | upstream divides by `dds_max == 0` → `nan` + `RuntimeWarning`, silently propagating into dataset means. Our port raises (BRIEF §1-1). |
 
-## 4. Paper comparison — **PENDING, blocked**
+## 4. Paper vs code — Eq. 1-6 (DOI 10.1038/s41598-025-09538-2)
 
-BRIEF2 §D1-3 asks for a list of differences between the paper's Eq. 1-6 and the code. **The
-paper is not available in this repository**: `Šimić et al/` at the monorepo root is an empty
-directory (created 2026-09-21) and no PDF/DOI/arXiv id was supplied. The port therefore follows
-the code, as the brief instructs for disagreements, and this section stays open. To close it,
-drop the PDF in that folder (or give the identifier) and the Eq. 1-6 comparison can be added
-here. Recorded as DECISIONS **D-D1-4**.
+Šimić, I., Veas, E. & Sabol, V. "A comprehensive analysis of perturbation methods in explainable
+AI feature attribution validation for neural time series classifiers." *Scientific Reports*
+**15**:26607 (2025). Open access; PDF in `Šimić et al/` at the monorepo root (fetched 2026-09-22
+from nature.com). Equation text below is from pp. 6-7 of that PDF.
+
+| # | paper | code (`res_utils.py`) | verdict |
+|---|---|---|---|
+| Eq. 1-2 | `DDS = Σ_{i=1..n} (L_i − M_i)·((n−i+1)/n)³`, normalised by `DDS_max = Σ_{i=2..n} ((n−i+1)/n)³` | `np.average(diffed, weights=cubic) / np.average(max_diffed, weights=cubic)` with `max_diffed[1:] = 100` | **equivalent**, see P1 |
+| Eq. 3-5 | `f = #(DDS>0)/#samples`, `u = #(DDS<0)/#samples`, `PES = f − u` | identical, zeros counted in neither | **identical** |
+| Eq. 6 | `CMI = 2/(\|DDS\|⁻¹+\|PES\|⁻¹)` **if `DDS·PES ≥ 0`**, else 0 | `if pes*dds <= 0: return 0` else the harmonic mean | **branch conditions are opposite**, see P2 |
+
+**P1 — the sum/average and the 100 cancel; the normalised DDS is the same number.**
+The paper is a weighted *sum* over probabilities in [0, 1] divided by a weight sum; the code is a
+weighted *average* over curve values on a 0-100 scale divided by another weighted average. Both
+reduce to `Σ wᵢ dᵢ / (c · Σ_{i≥2} wᵢ)` with `c = 1` (paper) or `c = 100` (code), so the hard-coded
+100 is a **unit conversion for probability×100 inputs, not a different formula**. Verified
+numerically: on 2,000 random pairs, `paper(p ∈ [0,1])` vs `code(100·p, max_diff=100)` differ by at
+most **8.9e-16**, and `paper(p)` vs `code(p, max_diff=1)` by at most **4.4e-16** (float noise).
+This is what `max_diff` in our port is for: set it to 1 to read the paper's equations literally.
+
+**P2 — Eq. 6 says `≥ 0`, the code says `<= 0` returns 0: opposite statements, same numbers.**
+The disagreement is exactly the set `DDS·PES = 0`. The paper puts it in the harmonic-mean branch,
+where `|DDS|⁻¹ → ∞` makes the expression tend to 0; the code sends it to the `0` branch directly.
+Verified over the sign grid including `(0, 0.5)`, `(0.5, 0)` and `(0, 0)`: both give 0.0 exactly.
+The code's guard is the **safer implementation** — Eq. 6 taken literally in Python raises
+`ZeroDivisionError` on a float zero. BRIEF2 says to implement the code, and we do; the port keeps
+`p * d <= 0`, and this row is the documented difference.
+
+**Also noted:** the paper credits the non-decaying Degradation Score to Schulz et al. (ref. 46);
+`degradation_score` :7-29 is that metric and is not used by the CMI pipeline (not ported, §1).
+No further difference was found between Eq. 1-6 and the four ported functions.
 
 ## 5. Equivalence evidence (`tests/test_simic_equivalence.py`, 11 tests)
 

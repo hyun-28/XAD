@@ -15,6 +15,9 @@ import numpy as np
 from src.config import load_yaml
 
 
+SUPPORTED = ("IForest", "MatrixProfile")
+
+
 class DetectorError(RuntimeError):
     """A detector returned something that must not be used as a score."""
 
@@ -65,7 +68,10 @@ def fit_detector(name: str, x_fit: np.ndarray, *, seed: int, **hp) -> FittedDete
     if name == "IForest":
         from src.detectors.iforest import IForestDetector
         return IForestDetector.fit(x_fit, seed=seed, **hp)
-    raise ValueError(f"unknown detector {name!r}; supported: ['IForest']")
+    if name == "MatrixProfile":
+        from src.detectors.matrixprofile import MatrixProfileDetector
+        return MatrixProfileDetector.fit(x_fit, seed=seed, **hp)
+    raise ValueError(f"unknown detector {name!r}; supported: {sorted(SUPPORTED)}")
 
 
 def detector_config(name: str) -> dict:
