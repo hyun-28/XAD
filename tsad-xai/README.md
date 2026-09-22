@@ -2,6 +2,50 @@
 
 Working repository for the study described in `TSAD-XAI_파이프라인_설계서.md`.
 
+## Running on the lab server
+
+```bash
+git clone <this repo> && cd tsad-xai
+conda env create -f environment.server.yml && conda activate tsadxai   # nvidia channel + pytorch-cuda 12.1
+python -m pytest tests -q                    # 142 passed; needs no data
+```
+
+**Before `scripts/01_download.py` will run there**, note that it *requires the researcher's local
+copy of the archive* — `configs/paths.yaml: ucr.local_zip / local_extracted` currently point at
+`../AnomalyDatasets_2021/…`, which exists only on the Mac. The script raises
+`FileNotFoundError: local copy not found (configs/paths.yaml)` otherwise. That comparison is the
+A1 gate (BRIEF §7-1: local copy ≡ official 2021 archive), so it is **not** silently skippable.
+Either:
+
+- copy `AnomalyDatasets_2021/` to the server and point `configs/paths.yaml` at it (the audit then
+  re-runs end to end, exit 0), **or**
+- skip Task A on the server: it is already done and its outputs are committed
+  (`data/manifest/ucr_manifest.csv`, `reports/data_audit.md`,
+  `data/raw/ucr/CHECKSUMS.sha256`). Everything downstream needs only the extracted
+  `UCR_Anomaly_FullData/` directory plus that manifest, so download the official zip, extract it,
+  and set `ucr.official_dir` to where it landed.
+
+What actually costs time on the server:
+
+```bash
+python scripts/03_gate1.py --detector MatrixProfile --workers 8   # 250 × 2 conditions
+python scripts/04_report.py --detector MatrixProfile
+```
+
+On the Mac (4 workers) that was 5,012 s, with a single 1,823 s call on the two 900,000-point
+series. It is CPU-bound in stumpy and does not use the GPU.
+
+For the Šimić reproduction (BRIEF2 D3) use the separate env — it needs `primefac`, `einops`,
+`tslearn`, which the main env deliberately does not have (`docs/DECISIONS.md` D-D3-1):
+
+```bash
+conda env create -f environment_simic.yml && conda activate tsadxai-simic
+python scripts/00_fetch_simic.py             # 537 MB pinned clone, git-ignored
+python scripts/05_wafer_zero_class.py        # 25 models, ~45 min CPU
+```
+
+---
+
 ## Task A — UCR data-lineage audit (BRIEF §3) — DONE 2026-09-21; follow-up F1–F7 2026-09-22
 
 Reproduce (needs network once, for the 184 MB official zip and the Goswami repo):
