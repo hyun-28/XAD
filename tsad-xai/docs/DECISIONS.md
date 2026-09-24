@@ -871,7 +871,8 @@ research decision; D10–D13 and D-E3-1(rev) stay in the PENDING section below.
 
 # PENDING — W2 rev1 결정 (연구자 승인 대기)
 
-> **상태: PENDING. 승인되지 않았다.** 아래는 `docs/briefs/BRIEF_W2_perturbation-experiments_rev1.md`
+> **상태: 2026-09-24 연구자 승인됨 → 아래 "W2 rev1 결정 — 승인" 섹션.** (아래 문구는 PENDING 당시 원문 그대로 둔다.)
+> **당시 상태: PENDING. 승인되지 않았다.** 아래는 `docs/briefs/BRIEF_W2_perturbation-experiments_rev1.md`
 > §3 "승인 대기 — PENDING"의 D10–D13, D-E3-1(rev) 문구를 **그대로** 옮긴 것이다(브리프 62–130행).
 > 옮긴 날짜: 2026-09-24 (W2 rev1 세션 1). 승인 문구와 결정 전용 커밋은 세션 2에서 만든다(브리프 §3, §13).
 > 이 섹션이 PENDING인 동안 E2·E3는 실행하지 않는다(브리프 §11).
@@ -945,3 +946,79 @@ research decision; D10–D13 and D-E3-1(rev) stay in the PENDING section below.
 - 설명용 연산자는 `recon_test`로 고정한다.
 - 주 분석의 평가용 연산자에서 `recon_test`는 **제외**한다 (자기 일치 칸 제거). `recon_train`도 같은 계열이므로 주 분석에서 제외하고 별도로 보고한다.
 - **민감도 분석**: 평가용 연산자마다 "설명용 = 평가용"으로 FeatureAblation·KernelSHAP를 다시 계산한다. 주 조건 대비 순위 변화로 자기 일치 효과의 크기를 보고한다.
+
+---
+
+# W2 rev1 결정 — 승인 (2026-09-24, 연구자)
+
+이 섹션은 결정만 담은 커밋으로 기록된다(브리프 rev1 §3). 이 커밋 이후에만 E2·E3를 실행한다.
+
+## D10, D11, D13, D-E3-1(rev) — 승인 (rev1 §3 문구 그대로)
+
+- 위 PENDING 섹션의 D10, D11, D13, D-E3-1(rev) 문구를 **수정 없이** 승인한다.
+- **추가(연구자):** `identity`는 E3 평가용 연산자에서 제외한다. **E3 주 분석의 평가용 연산자는 B1–B6**이다.
+  (`recon_test`는 설명용, `recon_train`은 별도 보고 — D-E3-1(rev) 그대로.)
+
+## D12 — 승인, tol 확정
+
+- D12-a, D12-a′, D12-b 문구 그대로 승인.
+- **tol:** D12-a (i)(ii), D12-a′ = **1e-12**; D12-b = **1e-3**.
+- **근거:**
+  - stumpy 1.14.1 `stump.py:201-204` (`_compute_diagonal`): 양쪽 상수 → `pearson = 1.0`, 한쪽 상수 →
+    `pearson = 0.5`를 **정확히 대입**한다. 따라서 D = √m, D = 0이 부동소수 연산 없이 결정된다(1e-12는 여유).
+  - `stump.py:207` (`pearson = min(1.0, pearson)`): 상관이 1에 가까울 때 거리를 0으로 맞추는 임계값이 없다.
+    참 거리 0(정확 일치)도 누적 오차만큼 양수로 나온다.
+  - 게이트 1 자기일치 잔차(학습 구간 창 vs 자기 자신, 250개): 최대 **3.3e-4 (#249, w = 24)**. D12-b의 1e-3은 이 값의 약 3배.
+- **보고 의무:** E2 보고서에 D12-b 사례의 실제 `s(j*)_after` 분포(최댓값, 99% 분위)를 포함한다.
+
+## 표본 — 89그룹 전수
+
+- E2·E3는 **89 content_group 전수(그룹당 1개, `configs/w2_sample.yaml`의 `series` 전체)**로 한다.
+- 근거: rev1 §5 "게이트 2에서 89그룹 전체의 예상 시간이 예산 안이면 89그룹으로 올린다" — 게이트 2 예상 0.20 h ≤ 2 h
+  (`reports/w2_gate2.md`, 커밋 `af12c15`).
+- 60그룹 결과는 따로 내지 않는다.
+
+## D-E1-2 — 승인
+
+- 다중 run은 **각 run을 원본 x 기준으로 독립 처리**(현재 구현)한다.
+- **보고 의무:** E3 보고서에 B3의 50점 문맥이 다른 run과 겹친 빈도를 한계로 보고한다.
+
+## B2 / B5 — legacy 정의 유지
+
+- B2(전체 시리즈 평균), B5(전체 시리즈 평균·표준편차의 정규분포)의 legacy 정의를 유지한다.
+- 근거(연구자): 완전히 덮인 윈도우에서는 z-정규화 때문에 채움값의 수준·척도가 점수에 영향을 주지 못한다.
+
+## D-E2a-1 — E2a 위치 부족 규칙 (신규)
+
+- 길이별로 확보한 정상 위치가 **10개 이상**이면 확보한 만큼 쓰고 `positions_short` 플래그를 단다(20개 미만일 때).
+- **10개 미만**이면 그 시리즈를 **그 길이에서만** 제외한다.
+
+## D-PRE-1 — 사전 노출 기록 (신규)
+
+- W2-0 파일럿(BRIEF3, 커밋 `b96ee3a`)이 존재했다. 시리즈 #066 1개에서 **Šimić et al. 지우개**
+  (Zero, SampleMean, OutOfDistHigh, Inverse, UniformNoise100, LinearInterpolation, NearestNeighborWindow)와
+  ContextReconstruct를 썼다. rev1의 B1–B6, recon_test, recon_train과는 다른 연산자다.
+- 파일럿의 섭동 효과 값(ΔS, 가짜 경보 등, `reports/w2_pilot.*`)을 **Claude Code가 봤다.**
+- rev1의 결정들(D10–D13, D-E3-1(rev))은 파일럿 결과를 **참조하지 않고** 작성됐다.
+- 연구자의 파일럿 결과 열람 여부: **[보지 않음]**.
+
+## D-C5-4 — 학습 구간 자기일치 sanity check (W1에서 결정, 사후 이관)
+
+- **W1에서 결정, 사후 이관.** 근거 커밋 `6b5d7c1` (2026-09-23, 게이트 1 MatrixProfile PASS):
+  `scripts/03_gate1.py`(주석 "Sanity check pre-registered in D-C5-4", `train_selfmatch_max`),
+  `scripts/04_report.py` §5a, `reports/gate1_MatrixProfile.md` §5a.
+- **내용:** AB-join에서 참조(학습) 구간 안에 완전히 들어가는 창은 자기 자신과 일치하므로 점수 ≈ 0이어야 한다.
+  패딩된 앞부분과 `train_end`에 걸치는 창은 제외한다. 결과: 최대 3.3e-4 < 1e-3 → 예측 성립.
+  따라서 학습 구간은 Artifact Index의 정상 구간에서 제외한다(s_normal은 테스트 구간 기준).
+- 이 문서에 항목이 없었던 것은 누락이며, 내용은 위 커밋의 코드·보고서 그대로다.
+
+## D-C5-5 — 윈도우 support 기준 P1은 진단용 (W1에서 결정, 사후 이관)
+
+- **W1에서 결정, 사후 이관.** 근거 커밋 `6b5d7c1`: `scripts/03_gate1.py`(주석 "Diagnostics, not criteria
+  (D-C5-5)", `max_support`, `p1_support_bw`), `scripts/04_report.py`, `reports/gate1_MatrixProfile.md` §2.
+  D-C5-6(이 문서)도 이 항목을 참조한다.
+- **내용:** 창 점수는 `start + w//2`에 기록되므로 이상 구간의 높은 점수는 support
+  `[start − w + 1 + w//2, stop − 1 + w//2)`에 걸친다. w보다 짧은 이상에서는 최고점이 P1이 읽는
+  `[start0, stop0)` 밖에 놓일 수 있다. `p1_support_bw`는 **진단**으로만 보고하고 판정 기준이 아니다.
+  rev1 §2의 `support(j)` 정의가 이것을 따른다.
+
