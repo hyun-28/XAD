@@ -1022,3 +1022,65 @@ research decision; D10–D13 and D-E3-1(rev) stay in the PENDING section below.
   `[start0, stop0)` 밖에 놓일 수 있다. `p1_support_bw`는 **진단**으로만 보고하고 판정 기준이 아니다.
   rev1 §2의 `support(j)` 정의가 이것을 따른다.
 
+
+---
+
+# W2 E2/E3 — implementation decisions (2026-09-24, after the decision commit f29eddf)
+
+Implementation choices only; the research decisions are in the approved section above.
+
+## D-E2-1 — Outputs are `.csv.gz`, not `.parquet`
+
+- **What:** rev1 §8 names `results/w2/ai.parquet`, `sar.parquet`. The reference env (`tsadxai-w1`,
+  `environment.yml`) has no parquet engine (pyarrow / fastparquet absent, checked 2026-09-24), and
+  adding one to the reference env is what D-D3-1 forbids. Same columns, written as
+  `results/w2/ai.csv.gz`, `sar.csv.gz` (and `faithfulness.csv.gz` for E3).
+- **Revert:** add pyarrow to `environment.yml`, rebuild, re-lock, switch `to_csv` → `to_parquet`.
+
+## D-E2-2 — E2 details not fixed by the brief
+
+- Normal positions are pairwise disjoint **within** a length; the three lengths are drawn
+  independently (seed `e2_grid.position_seed` per series). Stochastic operators draw from
+  `default_rng([operator_seed, series, region, operator])`.
+- D12 cases: every region with |R| = w (normal 1.0w, and SAR/anomaly regions when |GT| = w).
+- Report primary statistic: median across series of per-series medians (content_group = series);
+  pooled region medians alongside. "Flagged" series (for with/without tables): positions_short,
+  a dropped length, sar_few_positions, SAR-excluded, sar_den_zero for a non-identity operator, or any
+  no-donor region.
+- **Revert:** `scripts/w2_e2.py`, `scripts/w2_e2_report.py`.
+
+## D-E3-1 — KernelSHAP = numpy port of captum 0.9.0 KernelShap
+
+- captum is not in the reference env; Šimić et al. called captum `KernelShap` with defaults
+  (`interpretability_methods.py:127-143`). The port (`faithfulness_ad.kernel_shap`) follows
+  `captum/attr/_core/kernel_shap.py:268-365` (0.9.0, read in `tsadxai-simic`): all-present and
+  all-absent samples first with weight 1e6, then k ~ p(k) ∝ (K−1)/(k(K−k)) and a uniform subset of size
+  k, weight 1; weighted least squares with intercept; coefficients = attributions. Not tested for
+  bit-equality with captum (different RNG and solver).
+
+## D-E3-2 — KernelSHAP sample count S (rule fixed before the budget run)
+
+- **Rule:** S = 2K + 2048 (shap `KernelExplainer` nsamples="auto"). The captum default (25, what
+  Šimić et al. ran with per-time-point features) is reported in the budget as the alternative; with
+  K up to 64 segments 25 samples leave the regression underdetermined.
+- If the predicted E3 time (main + sensitivity) exceeds 8 h → STOP with the S / time table (rev1 §9).
+- Budget model: 3 series (train_end quantiles 0/.5/1 of the sample); per evaluation kind the mean
+  time over 10 evaluations; per-kind model c0 + c1·n_A·n_B + c2·n (NNLS; 3 points); counts per series
+  from K and S; wall = LPT over 4 workers.
+
+## D-E3-3 — Ranking aggregation details
+
+- Per (evaluation operator, AM): DDS per series (= content_group) → mean → CMI(mean DDS, PES of the
+  DDS list) — the traced Šimić metric (`rank_ams_by_cmi`, `rank_by_metric = 'cmi-mean'`).
+  Ties in CMI (e.g. several AMs at CMI = 0) → average ranks (upstream's stable `sorted` would order
+  ties by list position).
+- Kendall's W without tie correction; bootstrap percentile CI, B = 1000, seed 20260924.
+- Per-group ranking (secondary) uses DDS directly (CMI needs more than one sample).
+- Curves: steps mask ceil(t·K/10) segments; MoRF/LeRF of the same step share the operator seed so
+  the 100 % points coincide for stochastic operators.
+
+## D-E3-4 — ReconCache (speed only)
+
+- `src/perturb/operators.ReconCache` returns exactly the donor `recon_donor` returns (sorted
+  (distance, u) per run, then the first candidate clearing the other runs' constraints);
+  `tests/test_operators_w2.py::test_recon_cache_equals_apply`.

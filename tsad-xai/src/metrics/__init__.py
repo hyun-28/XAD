@@ -4,7 +4,7 @@ artifact.py            Stage 3  -- does perturbation manufacture anomalies?
 faithfulness.py        Stage 5  -- the incumbent protocol (arXiv:2601.19017), ported
 localization.py        Stage 6  -- label-based, perturbation-free
 faithfulness_simic.py  BRIEF2 D1 -- DDS/PES/CMI, ported from Simic et al. (classification)
-faithfulness_ad.py     BRIEF2 D2 -- their AD adaptation: interface only, D7-D10 undecided
+faithfulness_ad.py     W2 rev1 D7-D9, D13 (approved f29eddf) -- the AD adaptation used by E3
 """
 import numpy as np
 

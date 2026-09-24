@@ -143,3 +143,32 @@ def test_config_matches_code():
     for k, v in META.items():
         assert {f: cfg[k][f] for f in v} == v
     assert IDENTITY is not None
+
+
+@pytest.mark.parametrize("name", ["recon_test", "recon_train"])
+def test_recon_cache_equals_apply(name):
+    """E3 uses ReconCache for speed; it must give exactly the donors `apply` gives."""
+    from src.perturb.operators import ReconCache, apply_cached
+    x, ctx = _setup()
+    cache = ReconCache(x, ctx)
+    rng = np.random.default_rng(11)
+    segs = [(s, s + 8) for s in range(2940, 3120, 8)]            # segments around the GT, like E3's Ω
+    for _ in range(60):
+        pick = sorted(rng.choice(len(segs), size=int(rng.integers(1, len(segs))), replace=False))
+        runs, cur = [], None
+        for k in pick:
+            a, b = segs[k]
+            if cur and cur[1] == a:
+                cur = (cur[0], b)
+            else:
+                if cur:
+                    runs.append(cur)
+                cur = (a, b)
+        runs.append(cur)
+        try:
+            want = apply(name, x, runs, None, ctx)
+        except NoDonorError:
+            with pytest.raises(NoDonorError):
+                apply_cached(name, x, runs, None, ctx, cache)
+            continue
+        assert np.array_equal(apply_cached(name, x, runs, None, ctx, cache), want)

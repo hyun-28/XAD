@@ -38,3 +38,10 @@ e2_grid:
 gate2:
   timing_train_end_quantiles: [0.0, 0.25, 0.5, 0.75, 1.0]   # 5 series from the 89-group sample
   budget_hours: 2.0
+
+# rev1 §9 E3 (D13, D-E3-1(rev) approved f29eddf; D-E3-2 for S)
+e3:
+  seed: 20260924
+  kernel_shap_samples: shap_auto   # S = 2K + 2048 (shap nsamples="auto"); alternative reported: captum_default (25)
+  budget_reps: 10                  # timed evaluations per kind per budget series
+  budget_hours: 8.0                # rev1 §9: run only if the predicted main + sensitivity time is within this

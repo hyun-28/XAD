@@ -130,6 +130,80 @@ def recon_donor(x: np.ndarray, run: tuple[int, int], runs, ctx: Ctx, source: str
     return int(u[k]), float(d[k])
 
 
+class ReconCache:
+    """Same result as `recon_donor`, faster when one x is masked many times (E3).
+
+    The context distance of a candidate u depends only on the run (a, b) and x, not on the other runs;
+    only the admissible set does. So for each (source, a, b) all candidates admissible WITHOUT the
+    other-run constraints are sorted once by (distance, u), and a call returns the first one that also
+    clears the other runs' I(.) and edge contexts. Lexicographic (distance, u) order = argmin with ties
+    to the smallest u, i.e. exactly `recon_donor` (tests/test_operators_w2.py).
+    """
+
+    def __init__(self, x: np.ndarray, ctx: Ctx):
+        self.x, self.ctx = np.asarray(x, dtype=np.float64), ctx
+        self._order: dict = {}
+
+    def _sorted(self, run, source):
+        key = (source, run)
+        if key not in self._order:
+            x, ctx = self.x, self.ctx
+            n, w = x.size, ctx.w
+            a, b = run
+            L, c = b - a, context_len(w)
+            if a - c < 0 or b + c > n:
+                self._order[key] = None
+            else:
+                lo, hi = (ctx.train_end, n) if source == "test" else (0, ctx.train_end)
+                u = np.arange(max(lo, c), min(hi, n - c) - L + 1)
+                if u.size:
+                    ok = np.ones(u.size, dtype=bool)
+                    for f0, f1 in [exclusion(ctx), influence(a, b, w), (a - c, a), (b, b + c)]:
+                        ok &= ~((u < f1) & (f0 < u + L))
+                    u = u[ok]
+                d = (_sq_dist(x, u - c, x[a - c:a]) + _sq_dist(x, u + L, x[b:b + c])) if u.size else np.empty(0)
+                idx = np.lexsort((u, d))
+                self._order[key] = (u[idx], d[idx])
+        return self._order[key]
+
+    def donor(self, run, runs, source) -> int:
+        entry = self._sorted(run, source)
+        a, b = run
+        if entry is None:
+            raise NoDonorError(f"run [{a}, {b}): its own context leaves the series")
+        u, _ = entry
+        L, c, w = b - a, context_len(self.ctx.w), self.ctx.w
+        others = [iv for ra, rb in runs if (ra, rb) != run
+                  for iv in (influence(ra, rb, w), (ra - c, ra), (rb, rb + c))]
+        if not others:
+            if u.size == 0:
+                raise NoDonorError(f"run [{a}, {b}): no admissible {source} donor of length {L}")
+            return int(u[0])
+        ok = np.ones(u.size, dtype=bool)
+        for f0, f1 in others:
+            ok &= ~((u < f1) & (f0 < u + L))
+        hit = np.flatnonzero(ok)
+        if hit.size == 0:
+            raise NoDonorError(f"run [{a}, {b}): no admissible {source} donor of length {L}")
+        return int(u[hit[0]])
+
+
+def apply_cached(name: str, x: np.ndarray, runs, rng, ctx: Ctx, cache: ReconCache) -> np.ndarray:
+    """`apply` with recon donors from a ReconCache built on the same x and ctx (identical output)."""
+    if name not in ("recon_test", "recon_train"):
+        return apply(name, x, runs, rng, ctx)
+    if cache.x is not x and not np.array_equal(cache.x, x):
+        raise OperatorError("ReconCache was built for a different x")
+    x = np.asarray(x, dtype=np.float64)
+    rs = _check_runs(x, runs)
+    out = x.copy()
+    src = name.split("_")[1]
+    for run in rs:
+        u = cache.donor(run, rs, src)
+        out[run[0]:run[1]] = x[u:u + run[1] - run[0]]
+    return out
+
+
 def apply(name: str, x: np.ndarray, runs, rng: np.random.Generator | None, ctx: Ctx) -> np.ndarray:
     if name not in META:
         raise OperatorError(f"unknown operator {name!r}; known: {NAMES}")

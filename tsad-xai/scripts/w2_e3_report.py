@@ -1,0 +1,249 @@
+"""w2_e3_report.py -- reports/w2_ranking.md and reports/figures/w2/rank_bump.png from E3 outputs.
+
+AM ranking metric = the one Šimić et al. rank AMs by (source trace, edc6a870):
+    `notebook - results summary and figures.ipynb` cell 9, `rank_ams_by_cmi`, `rank_by_metric = 'cmi-mean'`:
+    CMI(DDS - mean, PES) per AM, sorted descending; DDS per sample in results_analysis.py:132
+    (`decaying_degradation_score(pc_morf, pc_lerf)`), PES over the samples' DDS in results_analysis.py:204-229.
+Here: per evaluation operator and AM, DDS per content_group (one series each) -> mean -> CMI(mean DDS,
+PES(DDS list)) -> AM ranking (descending CMI; ties -> average rank, D-E3-3).
+Main analysis (D13): Spearman ρ between operator pairs' AM rankings, Kendall's W over the 6 operators,
+content_group bootstrap B = 1000 (percentile 95 % CI). Secondary: per-group W distribution (per-group
+ranking by DDS), Wilcoxon signed-rank + Holm for AM pairs within each operator. Sensitivity
+(D-E3-1(rev)): explanation operator = evaluation operator for FeatureAblation and KernelSHAP.
+"""
+from __future__ import annotations
+
+import itertools
+import json
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+from scipy.stats import rankdata, spearmanr, wilcoxon
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from src.config import REPO_ROOT  # noqa: E402
+from src.metrics.faithfulness_simic import cmi, pes  # noqa: E402
+
+RES = REPO_ROOT / "results" / "w2"
+REPORT = REPO_ROOT / "reports" / "w2_ranking.md"
+FIG = REPO_ROOT / "reports" / "figures" / "w2" / "rank_bump.png"
+EVAL_OPS = ["B1_zero", "B2_global_mean", "B3_local_mean", "B4_linear_interp", "B5_gaussian", "B6_shuffle"]
+AMS = ["Random", "FeatureAblation", "KernelSHAP", "MPNative"]
+B = 1000
+SEED = 20260924
+
+
+def md_table(header, rows):
+    out = ["| " + " | ".join(map(str, header)) + " |", "|" + "|".join("---" for _ in header) + "|"]
+    out += ["| " + " | ".join(str(c) for c in r) + " |" for r in rows]
+    return "\n".join(out)
+
+
+def f(v, p=3):
+    if v is None or (isinstance(v, float) and not np.isfinite(v)):
+        return "—"
+    a = abs(v)
+    return f"{v:.{p}g}" if (a != 0 and (a < 1e-3 or a >= 1e4)) else f"{v:.{p}f}"
+
+
+def cmi_table(dds: pd.DataFrame) -> pd.DataFrame:
+    """dds: index series_id, columns (op, am) -> CMI per (op, am)."""
+    out = {}
+    for (op, am), col in dds.items():
+        v = col.dropna().to_numpy()
+        out[(op, am)] = cmi(float(v.mean()), pes(v)) if v.size else np.nan
+    return pd.Series(out).unstack()          # rows op, cols am
+
+
+def ranks(c: pd.DataFrame) -> pd.DataFrame:
+    """Rank 1 = highest CMI; ties -> average rank."""
+    return c.apply(lambda r: pd.Series(rankdata(-r.to_numpy()), index=r.index), axis=1)
+
+
+def kendall_w(rk: np.ndarray) -> float:
+    """rk: m raters x n items (average ranks). W = 12 S / (m^2 (n^3 - n)), no tie correction."""
+    m, n = rk.shape
+    R = rk.sum(axis=0)
+    S = float(((R - R.mean()) ** 2).sum())
+    return 12 * S / (m ** 2 * (n ** 3 - n))
+
+
+def pair_rhos(rk: pd.DataFrame) -> dict:
+    out = {}
+    for a, b in itertools.combinations(rk.index, 2):
+        x, y = rk.loc[a].to_numpy(), rk.loc[b].to_numpy()
+        out[(a, b)] = float(spearmanr(x, y).statistic) if (np.ptp(x) > 0 and np.ptp(y) > 0) else np.nan
+    return out
+
+
+def holm(p: list[float]) -> list[float]:
+    p = np.asarray(p, dtype=float)
+    o = np.argsort(p)
+    adj = np.empty_like(p)
+    run = 0.0
+    for i, k in enumerate(o):
+        run = max(run, (len(p) - i) * p[k])
+        adj[k] = min(1.0, run)
+    return adj.tolist()
+
+
+def main() -> int:
+    fz = pd.read_csv(RES / "faithfulness.csv.gz")
+    info = pd.read_csv(RES / "e3_series.csv")
+    run = json.loads((RES / "e3_run.json").read_text())
+    budget = json.loads((RES / "e3_budget.json").read_text())
+    ok_series = set(info[info.excluded.fillna("") == ""].series_id)
+    main = fz[(fz.condition == "main") & fz.series_id.isin(ok_series)]
+    dds = main.pivot_table(index="series_id", columns=["eval_op", "am"], values="dds")
+    c = cmi_table(dds).loc[EVAL_OPS, AMS]
+    rk = ranks(c)
+    rhos = pair_rhos(rk)
+    W = kendall_w(rk.to_numpy())
+    # bootstrap over content_groups (= series)
+    rng = np.random.default_rng(SEED)
+    ids = dds.index.to_numpy()
+    boot_rho = {k: [] for k in rhos}
+    boot_w = []
+    for _ in range(B):
+        sel = rng.choice(ids, size=ids.size, replace=True)
+        rkb = ranks(cmi_table(dds.loc[sel]).loc[EVAL_OPS, AMS])
+        boot_w.append(kendall_w(rkb.to_numpy()))
+        for k, v in pair_rhos(rkb).items():
+            boot_rho[k].append(v)
+    ci = lambda v: (np.nanpercentile(v, 2.5), np.nanpercentile(v, 97.5)) if np.isfinite(v).any() else (np.nan, np.nan)  # noqa: E731
+
+    L = []
+    A = L.append
+    A("# W2 E3 — attribution-method ranking under different evaluation operators (C2)\n")
+    A(f"GENERATED by scripts/w2_e3_report.py at {datetime.now(timezone.utc).isoformat(timespec='seconds')} from "
+      f"`results/w2/` (scripts/w2_e3.py run at {run['generated_utc']}, HEAD `{run['head'][:7]}`). Do not hand-edit. "
+      "Classification already showed evaluation-operator dependence (Šimić et al. 2025); this is the AD check, "
+      "no novelty is claimed.\n")
+    A(f"`{run['env_header']}`\n")
+    A(md_table(["item", "value"], [
+        ["decision commit", f"`{run['decision_commit'][:7]}` at {run['decision_time']}"],
+        ["series", f"{run['n_series']} (excluded {run['n_excluded']}); one per content_group"],
+        ["explanation operator", "recon_test (D-E3-1(rev))"],
+        ["evaluation operators (main)", ", ".join(EVAL_OPS) + " — identity excluded (approved); recon_train separate"],
+        ["AMs", ", ".join(AMS)],
+        ["KernelSHAP samples", f"S = {run['kernel_shap_samples']} (D-E3-2); per series S = "
+                               f"{int(info.S.min())}–{int(info.S.max())}"],
+        ["segments", f"g = max(1, w//4) raised so K ≤ 64: K {int(info.K.min())}–{int(info.K.max())} "
+                     f"(median {int(info.K.median())}); g per series in `results/w2/e3_series.csv`"],
+        ["ranking metric", "CMI(mean DDS, PES) per (operator, AM), Šimić source trace (see docstring); ties → average rank"],
+        ["run time", f"{run['elapsed_s'] / 3600:.2f} h (budget estimate "
+                     f"{budget['estimate'][run['kernel_shap_samples']]['wall_h']:.2f} h)"],
+    ]))
+    A("")
+    A("## 1. Main analysis: CMI and AM ranks per evaluation operator\n")
+    A(md_table(["operator", *[f"{a} CMI" for a in AMS], *[f"{a} rank" for a in AMS]],
+               [[op, *[f(c.loc[op, a]) for a in AMS], *[f(rk.loc[op, a], 2) for a in AMS]] for op in EVAL_OPS]))
+    A("\nMean DDS / PES per (operator, AM):\n")
+    A(md_table(["operator", *AMS],
+               [[op, *[f"{f(dds[(op, a)].mean())} / {f(pes(dds[(op, a)].dropna().to_numpy()))}" for a in AMS]]
+                for op in EVAL_OPS]))
+    A("")
+    A("## 2. Agreement between operators\n")
+    wlo, whi = ci(np.array(boot_w))
+    A(f"**Kendall's W over the 6 operators: {f(W)}** (bootstrap 95 % CI [{f(wlo)}, {f(whi)}], B = {B}, "
+      "resampling content_groups).\n")
+    A(md_table(["operator pair", "Spearman ρ", "95 % CI"],
+               [[f"{a} – {b}", f(v), "[{}, {}]".format(*map(f, ci(np.array(boot_rho[(a, b)], dtype=float))))]
+                for (a, b), v in rhos.items()]))
+    A("\n**Resolution limit:** with 4 AMs a Spearman ρ between two rankings can take only 11 values "
+      "(−1, −0.8, …, 1 without ties), so ρ is coarse; CIs are percentile bootstrap intervals over that grid.\n")
+    # per-group W
+    pg = []
+    for sid, g in main.groupby("series_id"):
+        t = g.pivot_table(index="eval_op", columns="am", values="dds").reindex(index=EVAL_OPS, columns=AMS)
+        if t.isna().any().any():
+            continue
+        pg.append(kendall_w(np.vstack([rankdata(-t.loc[op].to_numpy()) for op in EVAL_OPS])))
+    pg = np.array(pg)
+    A(f"**Secondary — per-group W** (each series: AMs ranked by DDS under each operator; W over the 6): "
+      f"n = {pg.size}, median {f(np.median(pg))}, IQR [{f(np.quantile(pg, .25))}, {f(np.quantile(pg, .75))}], "
+      f"min {f(pg.min())}, max {f(pg.max())}.\n")
+    A("**Secondary — AM pairs per operator** (Wilcoxon signed-rank on per-series DDS, Holm within operator):\n")
+    rows = []
+    for op in EVAL_OPS:
+        pairs = list(itertools.combinations(AMS, 2))
+        ps, meds = [], []
+        for a, b in pairs:
+            d = (dds[(op, a)] - dds[(op, b)]).dropna()
+            ps.append(float(wilcoxon(d).pvalue) if (d != 0).any() else 1.0)
+            meds.append(float(d.median()))
+        for (a, b), p, pa, m in zip(pairs, ps, holm(ps), meds):
+            rows.append([op, f"{a} − {b}", f(m), f(p), f(pa)])
+    A(md_table(["operator", "pair (DDS difference)", "median difference", "p", "Holm p"], rows))
+    A("")
+    # sensitivity
+    A("## 3. Self-agreement sensitivity (explanation operator = evaluation operator)\n")
+    sens = fz[(fz.condition == "sensitivity") & fz.series_id.isin(ok_series)]
+    rows = []
+    for op in EVAL_OPS:
+        d = {a: dds[(op, a)] for a in AMS}
+        for am in ("FeatureAblation", "KernelSHAP"):
+            d[am] = sens[(sens.eval_op == op) & (sens.am == am)].set_index("series_id").dds.reindex(dds.index)
+        cs = pd.Series({a: cmi(float(v.dropna().mean()), pes(v.dropna().to_numpy())) for a, v in d.items()})[AMS]
+        rs = rankdata(-cs.to_numpy())
+        rm = rk.loc[op].to_numpy()
+        rho = float(spearmanr(rm, rs).statistic) if np.ptp(rm) > 0 and np.ptp(rs) > 0 else np.nan
+        rows.append([op, *[f"{f(rm[i], 2)} → {f(rs[i], 2)}" for i in range(4)], f(rho)])
+    A(md_table(["operator", *[f"{a} rank (main → self)" for a in AMS], "ρ(main, self)"], rows))
+    A("\nRandom and MPNative do not depend on the explanation operator; their CMIs are the main ones, "
+      "only their ranks can move.\n")
+    # recon_train separately
+    sep = fz[(fz.condition == "separate") & fz.series_id.isin(ok_series)]
+    if len(sep):
+        ds = sep.pivot_table(index="series_id", columns="am", values="dds")
+        cs = pd.Series({a: cmi(float(ds[a].dropna().mean()), pes(ds[a].dropna().to_numpy())) for a in AMS})
+        A("## 4. recon_train as evaluation operator (separate; not in the main analysis)\n")
+        A(md_table(["AM", "CMI", "rank"], [[a, f(cs[a]), f(r, 2)] for a, r in zip(AMS, rankdata(-cs.to_numpy()))]))
+        A("")
+    # limitations
+    A("## 5. Limits\n")
+    b3r, b3o = int(info.b3_runs.sum()), int(info.b3_overlap.sum())
+    A(f"- **B3 context overlap (D-E1-2, required):** of {b3r:,} B3 run applications in E3, {b3o:,} "
+      f"({100 * b3o / max(b3r, 1):.1f}%) had their 50-point context ([a − 50, a) ∪ [b, b + 50)) overlap another "
+      "masked run; B3 then averages original values that are themselves masked.\n"
+      f"- Excluded series: {run['n_excluded']}"
+      + ("" if run["n_excluded"] == 0 else " — " + "; ".join(f"{int(r.series_id)}: {r.excluded}"
+                                                            for r in info[info.excluded.fillna('') != ''].itertuples()))
+      + ".\n"
+      f"- MPNative consistency: Σ(ẑ_q − ẑ_nn)² vs resp² — max |difference| "
+      f"{f(float((info.mpnative_sum_contrib - info.mpnative_score_sq).abs().max()))}.\n"
+      "- DDS is not bounded to [−1, 1] here: curves are anomaly scores, not probabilities; max_diff = scale(x) (D8).\n")
+    # figure
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    FIG.parent.mkdir(parents=True, exist_ok=True)
+    colors = {"Random": "#999999", "FeatureAblation": "#0072B2", "KernelSHAP": "#D55E00", "MPNative": "#009E73"}
+    marks = {"Random": "o", "FeatureAblation": "s", "KernelSHAP": "^", "MPNative": "D"}
+    fig, ax = plt.subplots(figsize=(10, 4.8), constrained_layout=True)
+    xs = np.arange(len(EVAL_OPS))
+    for a in AMS:
+        ax.plot(xs, rk[a].to_numpy(), marker=marks[a], color=colors[a], lw=2, ms=8, label=a)
+        ax.annotate(a, (xs[-1] + 0.08, rk[a].iloc[-1]), va="center", fontsize=10, color="0.2")
+    ax.set_xticks(xs, EVAL_OPS, rotation=15)
+    ax.set_yticks([1, 2, 3, 4])
+    ax.set_ylim(4.5, 0.5)
+    ax.set_xlim(-0.3, len(EVAL_OPS) - 0.3 + 0.9)
+    ax.set_ylabel("AM rank by CMI (1 = best)")
+    ax.set_title(f"W2 E3 — AM ranking per evaluation operator (89 series; Kendall's W = {W:.2f})")
+    ax.grid(axis="y", color="0.92")
+    ax.legend(loc="lower left", frameon=False, ncol=4)
+    fig.savefig(FIG, dpi=200)
+    plt.close(fig)
+    A("## 6. Figure\n")
+    A(f"- `{FIG.relative_to(REPO_ROOT)}` — AM rank per evaluation operator.\n")
+    REPORT.write_text("\n".join(L) + "\n")
+    print(f"wrote {REPORT} and {FIG}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
