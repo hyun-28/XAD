@@ -143,6 +143,48 @@ class MatrixProfileDetector:
         self.last_flags = flags
         return s
 
+    def score_patch(self, x: np.ndarray, R: tuple[int, int]) -> tuple[np.ndarray, np.ndarray]:
+        """Scores of only the windows whose support meets R = [a, b)  (W2 rev1 §4 E0).
+
+        Returns (J, scores): J are score indices in the padded convention above (window start
+        + w//2), i.e. rev1 §2 `J(R) = [a + h - w + 1, b + h - 1]` clipped to the valid windows;
+        scores[k] is the value `score(x)[J[k]]` would hold.
+
+        stumpy path (1.14.1): `stumpy.stump(T_A = x[lo : hi + w], m = w, T_B = reference,
+        ignore_trivial = False)` (stump.py:stump), lo/hi = first/last window start touched by R
+        — the same call `score()` makes, on a slice. In an AB-join without an exclusion zone
+        (stump.py:726-728) every T_A window is matched independently against T_B, so the slice
+        gives the same values up to floating-point rounding: stumpy accumulates the covariance
+        along each diagonal (stump.py:_compute_diagonal), and a different T_A start changes the
+        accumulation path. rev1 E0 therefore compares against the full score with a tolerance
+        and computes resp_before and resp_after both through this method.
+        AB-join only: a self-join score of a window depends on the whole series.
+        """
+        import stumpy
+        if self.config["mode"] != "ab_join":
+            raise DetectorError("score_patch is defined for ab_join only")
+        x = np.asarray(x, dtype=np.float64).ravel()
+        w = self.config["window"]
+        n = x.size
+        a, b = int(R[0]), int(R[1])
+        if not (0 <= a < b <= n):
+            raise DetectorError(f"bad region [{a}, {b}) for n={n}")
+        if n < w:
+            raise DetectorError(f"series length {n} < window {w}")
+        lo, hi = max(0, a - w + 1), min(b - 1, n - w)       # window starts touched by R
+        seg = x[lo:hi + w]
+        if not np.isfinite(seg).all():
+            raise DetectorError("input contains NaN/inf in the patch")
+        self.n_patch_calls = getattr(self, "n_patch_calls", 0) + 1
+        try:
+            out = stumpy.stump(seg, m=w, T_B=self._reference, ignore_trivial=False)
+        except Exception as e:
+            raise DetectorError(f"stumpy.stump failed: {type(e).__name__}: {e}") from e
+        d = np.asarray(out[:, 0], dtype=np.float64)
+        if d.size != hi - lo + 1 or not np.isfinite(d).all():
+            raise DetectorError(f"patch profile length {d.size} != {hi - lo + 1} or non-finite")
+        return np.arange(lo, hi + 1) + w // 2, d
+
     @property
     def reference(self) -> np.ndarray | None:
         return None if self._reference is None else self._reference.view()

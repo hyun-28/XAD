@@ -6,7 +6,7 @@ from src.detectors import DetectorError, fit_detector
 from src.detectors.mp import MPScorer, affected_range, classify_windows
 from src.perturb.operators_simic import OPERATORS, Space, erase
 
-ATOL = 1e-8     # BRIEF3 §6 / S4
+ATOL = 1e-6     # W2 rev1 §0-1/§4-3 (was 1e-8, BRIEF3 §6 S4; the pilot failed it near zero distance, DECISIONS D-E0-3)
 
 
 def _series(n=2500, seed=0):

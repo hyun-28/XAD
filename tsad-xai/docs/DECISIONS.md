@@ -775,6 +775,87 @@ here are copied from script output (`reports/data_audit.md`,
 
 ---
 
+# W2 rev1 session 1 — implementation decisions (2026-09-24)
+
+These are implementation choices made while carrying out brief rev1 §4–§7. None of them is a
+research decision; D10–D13 and D-E3-1(rev) stay in the PENDING section below.
+
+## D-E0-1 — `score_patch` and the E0 accuracy test design
+
+- **What:** `MatrixProfileDetector.score_patch(x, R) -> (J, scores)` calls
+  `stumpy.stump(T_A = x[lo : hi + w], m = w, T_B = reference, ignore_trivial = False)` (stumpy
+  1.14.1, `stump.py:stump`) with lo/hi the first/last window start touched by R; J are score
+  indices in the gate-1 convention (start + w//2) and equal rev1 §2 `J(R)` clipped to valid
+  windows (`tests/test_score_patch.py::test_J_is_rev1_definition`). AB-join only.
+- **E0 test (rev1 §4-3):** 20 series drawn from all 250 (seed `e0.seed`), 20 R per series,
+  |R| ∈ {0.25, 0.5, 1.0} w rounded half up (min 1), R inside [train_end, n). Perturbation =
+  additive Gaussian noise, sd = std(x[:train_end]). The 20 R of a series are drawn with pairwise
+  disjoint I(R), so **one** full recomputation of x′ serves all 20 (a window's value depends only on
+  its own points and T_B); 20 full recomputations instead of 400.
+- **Alternatives:** one full recomputation per R (400; the 900k series make it hours).
+- **Revert:** `configs/w2.yaml` `e0`; `scripts/w2_e0.py`.
+
+## D-E0-2 — Execution profile: 4 workers × 2 numba threads
+
+- **What:** E0, the gate-2 timing and the planned E2 run as 4 worker processes (spawn), each with
+  `NUMBA_NUM_THREADS = 2` (8 of 10 cores). Gate 1 ran 4 workers × 10 threads (oversubscribed).
+- **Why:** rev1 §7-3 fixes "Mac 4워커"; the thread count per worker was not specified.
+- **Revert:** `configs/w2.yaml` `execution`.
+
+## D-E0-3 — The W2-0 pilot test tolerance aligned to rev1 E0 (1e-6)
+
+- **What:** `tests/test_mp_incremental.py` `ATOL` 1e-8 → **1e-6**, the criterion rev1 §0-1/§4-3 sets
+  for incremental vs full scoring. With it the pilot's failing case
+  (`test_incremental_equals_full[ContextReconstruct-Z]`, max 4.0e-7) passes. The researcher asked
+  for this test to be handled when E0 starts (2026-09-24).
+- **Not changed:** `reports/w2_pilot.md` keeps its S4 FAIL — it was judged under BRIEF3's 1e-8.
+- **Revert:** set `ATOL = 1e-8`.
+
+## D-E1-1 — B1–B6 wrapped unchanged; metadata assignments
+
+- **What:** `src/perturb/operators.py` calls `src/perturbations.py` (what `exp_a_artifact.py`
+  imports) with idx = arange(a, b); for one run the output is bit-identical to the legacy call
+  (`tests/test_operators_w2.py::test_single_run_equals_legacy_call`). Legacy traits kept as they
+  are: B2/B5 statistics over the whole series (incl. training part and anomaly), B3's fixed
+  50-point context, B5/B6 need a generator (legacy defaults to `default_rng(0)` when none is given;
+  `apply` requires an explicit seeded generator).
+- **canonical_shape:** B1/B2/B3 `constant`, B4 `linear`, others `none`. "std 0" is tested as
+  `ptp == 0` (stumpy's own criterion, `core.py:_rolling_isconstant`): `np.std` of 140 identical
+  values returned 4.4e-16 from rounding its mean.
+- **Revert:** `src/perturb/operators.py` `META`, `configs/operators.yaml`.
+
+## D-E1-2 — Several runs: each run is filled from the unperturbed x
+
+- **What:** rev1 D13 says each run gets the operator. The legacy functions take one index array
+  and treat [min, max] as one span (B3 context, B4 interpolation would overwrite the gap between
+  runs). `apply` therefore computes each run's replacement from the **unperturbed** x and writes
+  only that run; stochastic operators draw from one generator in run order.
+- **Open:** whether runs should instead be applied sequentially (later runs seeing earlier
+  replacements) matters only for E3's multi-segment masking — listed for the researcher.
+- **Revert:** the loop at the end of `apply`.
+
+## D-E1-3 — recon_* details not fixed by the D11 text
+
+- The donor's own contexts must exist (u − c ≥ 0, u + L + c ≤ n); they may lie outside the source
+  region. A run whose own context leaves [0, n) has no donor (`NoDonorError`, counted for §11).
+- Distances are computed directly (chunked), not by FFT/cumsum, so ties are decided on exact
+  per-window sums; the squared distance is minimised (same argmin as the distance).
+- The donor is copied raw (no offset alignment; D11 specifies none).
+- **Revert:** `recon_donor` in `src/perturb/operators.py`.
+
+## D-S-1 — Sample rule (rev1 §5)
+
+- One series per content_group for all 89 groups (seeded choice among members sorted by num);
+  the 60-group sample is a stratified subset of these (nested). Allocation: floor(60·share), zeros
+  raised to 1, remaining seats by largest fractional part among the non-raised domains
+  (→ ECG 34, ABP 10, Gait 7, EPG 3, Power Demand 2, Acceleration 1, RESP 1, Air Temperature 1,
+  NASA 1). Every group has exactly one domain (checked); no "other" group arises.
+- Metadata from the manifest, gate-1 detection.csv and the stored unperturbed gate-1 scores
+  (for scale(x)); no perturbation. Written to `configs/w2_sample.yaml` and committed before E2.
+- **Revert:** `scripts/w2_sample.py`, `configs/w2.yaml` `sample`.
+
+---
+
 # PENDING — W2 rev1 결정 (연구자 승인 대기)
 
 > **상태: PENDING. 승인되지 않았다.** 아래는 `docs/briefs/BRIEF_W2_perturbation-experiments_rev1.md`

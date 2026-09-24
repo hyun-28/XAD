@@ -1,0 +1,40 @@
+# W2 rev1 session 1 (brief docs/briefs/BRIEF_W2_perturbation-experiments_rev1.md). Decisions: DECISIONS D-E0-*, D-S-*, D-G2-*.
+
+# Mac execution profile used for E0, the gate-2 timing and (planned) E2: 4 worker processes,
+# each with 2 numba threads (4 x 2 = 8 of 10 cores; D-G2-1).
+execution:
+  workers: 4
+  numba_threads_per_worker: 2
+
+# rev1 §4-3: 20 random series x 20 random R, length in {0.25, 0.5, 1.0} w, R inside the test region,
+# non-identity perturbation = additive Gaussian noise. One full recomputation per series covers all
+# 20 R: their influence ranges I(R) are drawn disjoint (D-E0-1).
+e0:
+  n_series: 20
+  n_regions: 20
+  length_fracs: [0.25, 0.5, 1.0]
+  seed: 20260924
+  noise_sd_over_train_std: 1.0     # noise sd = this x std(x[:train_end])
+  tol: 1.0e-6                      # rev1 §4-3
+  max_draws: 100000
+
+# rev1 §5
+sample:
+  seed: 20260924
+  n_groups_default: 60
+  n_groups_floor: 40
+  lengths_w: [0.25, 0.5, 1.0]      # round half up, minimum 1 (rev1 §8 E2a)
+
+# E2 grid (rev1 §7-3, §8) — used here ONLY for the gate-2 timing; values are discarded (rev1 §12)
+e2_grid:
+  n_normal_positions: 20
+  lengths_w: [0.25, 0.5, 1.0]
+  n_sar_positions: 20
+  position_seed: 20260924
+  operators: [B1_zero, B2_global_mean, B3_local_mean, B4_linear_interp, B5_gaussian, B6_shuffle,
+              recon_test, recon_train, identity]
+  operator_seed: 20260924
+
+gate2:
+  timing_train_end_quantiles: [0.0, 0.25, 0.5, 0.75, 1.0]   # 5 series from the 89-group sample
+  budget_hours: 2.0

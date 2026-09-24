@@ -1,0 +1,54 @@
+# W2 rev1 masking operators (brief §6, E1). Implementation: src/perturb/operators.py.
+# B1-B6 are src/perturbations.py (sha256 prefix 123b871d3e48, unchanged since 4b4bea7), imported by
+# experiments/exp_a_artifact.py. Definitions below are transcribed from that file, line by line.
+# canonical_shape: is the z-normalised output inside a run fixed regardless of the input?
+# Metadata must equal src/perturb/operators.py::META (tests/test_operators_w2.py).
+# recon_* follow D11, which is PENDING (DECISIONS "PENDING — W2 rev1").
+
+legacy_source: src/perturbations.py
+operators:
+  B1_zero:
+    definition: "x[R] = 0"                                            # perturbations.py:33-39
+    canonical_shape: constant
+    uses_reference_set: false
+    stochastic: false
+  B2_global_mean:
+    definition: "x[R] = mean(x) over the WHOLE series (incl. training part and anomaly), computed before replacement"   # :42-48
+    canonical_shape: constant
+    uses_reference_set: false
+    stochastic: false
+  B3_local_mean:
+    definition: "x[R] = mean of x over [lo-50, lo) ∪ (hi, hi+50] minus R (pad = 50 points, fixed, not w-relative); whole-series mean if that context is empty"   # :51-63
+    canonical_shape: constant
+    uses_reference_set: false
+    stochastic: false
+  B4_linear_interp:
+    definition: "straight line from x[a-1] to x[b] (endpoints excluded); at a series edge the available neighbour is used for both ends"   # :66-84
+    canonical_shape: linear          # D11 note: not adopted as a recon option; metadata only
+    uses_reference_set: false
+    stochastic: false
+  B5_gaussian:
+    definition: "x[R] ~ Normal(mean(x), std(x)) over the WHOLE series; std 0 -> 1e-8; scale 1.0"   # :87-97
+    canonical_shape: none
+    uses_reference_set: false
+    stochastic: true
+  B6_shuffle:
+    definition: "x[R] = random permutation of x[R] (values preserved, order destroyed)"   # :100-113
+    canonical_shape: none
+    uses_reference_set: false
+    stochastic: true
+  recon_test:
+    definition: "D11 recon_test: x[R] = x[u:u+L], u = argmin raw Euclidean distance of edge contexts (c = max(1, w//4)); donor in the test region, clear of E, every run's I(.) and edge contexts; ties -> smallest u"
+    canonical_shape: none
+    uses_reference_set: false
+    stochastic: false
+  recon_train:
+    definition: "D11 recon_train: as recon_test with the donor in the training region [0, train_end)"
+    canonical_shape: none
+    uses_reference_set: true
+    stochastic: false
+  identity:
+    definition: "x unchanged (perturbations.py:124 IDENTITY)"
+    canonical_shape: none
+    uses_reference_set: false
+    stochastic: false
