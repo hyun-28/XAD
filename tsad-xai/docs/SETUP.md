@@ -8,8 +8,14 @@ No OS branches in code; paths come from `configs/*.yaml`.
 ```bash
 conda env create -f environment.yml          # name: tsadxai
 conda activate tsadxai
-python -m pytest tests -q                    # 114 passed on 2026-09-22
+python -m pytest tests -q                    # 142 passed on 2026-09-24 (committed tests, env tsadxai-w1)
 ```
+
+Test count: **142** for the committed test files as of 2026-09-24 (was 114 on 2026-09-22, before
+BRIEF2 Task D added tests). The W2 pilot's uncommitted tests (`tests/test_simic_operators.py`,
+`tests/test_mp_incremental.py`) are not included; one of them,
+`test_mp_incremental.py::test_incremental_equals_full[ContextReconstruct-Z]`, fails on the S4
+tolerance (`reports/w2_pilot.md` §3) and is to be handled when W2 E0 starts.
 
 Verified 2026-09-22 by building a fresh env from this file (`conda env create -f environment.yml
 -n tsadxai-w1`, conda 26.1.1 / libmamba): python 3.11.16, numpy 1.26.4, **scikit-learn 1.5.2**,
@@ -20,6 +26,31 @@ Verified 2026-09-22 by building a fresh env from this file (`conda env create -f
 > not from the yml). It still passes the tests, but it is **not** the reference environment; the
 > reference is the yml-built one. To replace it: `conda env remove -n tsadxai && conda env create
 > -f environment.yml`.
+
+## Šimić upstream env (`tsadxai-simic`, BRIEF2 D3 only)
+
+Separate from the reference env (DECISIONS D-D3-1); used only to run
+`scripts/05_wafer_zero_class.py`, which imports the pinned upstream clone's networks.
+
+**Current state (not a clean build).** Per `conda-meta/history` of the env on the researcher's Mac:
+created 2026-09-22 22:11 with `conda env create -f environment_simic.yml`, then patched at 22:30
+with `conda install -n tsadxai-simic -c conda-forge einops tslearn`. Both packages are in the
+committed `environment_simic.yml`, but the env was not rebuilt from that final file.
+`reports/wafer_zero_class.csv` (commit `6b5d7c1`) was produced with this patched env.
+**Not yet verified:** building a fresh env from the final yml and re-running 05 to confirm it
+reproduces the CSV. No run log of the original 05 run was kept.
+
+Reproduction procedure (not yet executed):
+
+```bash
+conda env create -f environment_simic.yml -n tsadxai-simic-check
+python scripts/00_fetch_simic.py             # pinned clone at edc6a870, if third_party/ is absent
+cp reports/wafer_zero_class.csv /tmp/wafer_zero_class.committed.csv
+conda run -n tsadxai-simic-check python scripts/05_wafer_zero_class.py   # defaults: --arch ResNet --tol 0.005 --seed 0
+diff /tmp/wafer_zero_class.committed.csv reports/wafer_zero_class.csv    # expect no difference
+git checkout -- reports/wafer_zero_class.csv                             # if it differs: restore, then report
+conda env remove -n tsadxai-simic-check
+```
 
 ## Linux GPU server (RTX A6000, CUDA 12.1)
 

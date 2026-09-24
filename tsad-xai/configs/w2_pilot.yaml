@@ -1,0 +1,49 @@
+# W2-0 single-series pilot (BRIEF3). Read by scripts/w2_pilot.py; decisions in DECISIONS D-P*.
+
+# P1 — series selection rule (coded, not hand-picked; D-P1-1)
+selection:
+  gate_fit_on: train_prefix          # gate-1 MP primary condition
+  gate_mode: ab_join
+  domains: [ECG, Gait, EPG]          # domain_goswami
+  min_normal_len_windows: 8          # longest certain-normal piece >= 8 m
+  # certain-normal = [train_end + m, start0 - m) ∪ [stop0 + m, n)  (D-P1-1)
+
+# P3 — how the upstream "sample" maps onto a long series (researcher decision 2026-09-23, D-P3-1)
+operator_space:
+  standardize: true                  # apply PMs in (x - mu)/sigma space, map back
+  reference: train                   # mu, sigma and the PM statistics from x[:train_end]
+operators: [Zero, SampleMean, OutOfDistHigh, Inverse, UniformNoise100,
+            LinearInterpolation, NearestNeighborWindow, ContextReconstruct]
+# report label for NearestNeighborWindow (researcher, 2026-09-23)
+operator_labels:
+  NearestNeighborWindow: "NearestNeighborWindow (이웃 붙이기)"
+noise_seed: 0                        # UniformNoise100 (np.random.RandomState)
+
+# P5 — pilot grid
+detectors: [Z, R]
+r_over_m: [0.5, 1, 2, 4]             # r = floor(f * m)
+n_positions: 3
+position_seed: 20260923
+position_max_draws: 100000
+
+# S1 / S4 tolerances (researcher decision 2026-09-23 for S1, D-P4-1; S4 from BRIEF3 §6)
+s1_atol: 1.0e-8
+s4_atol: 1.0e-8
+
+# P6 — timing / extrapolation
+timing:
+  repeats: 3                         # median of this many calls per timed configuration
+  K: 10                              # W2-1 positions per series
+  n_top: 5                           # longest series timed directly
+  quantile_series: [0.1, 0.3, 0.5, 0.7, 0.9]   # extra calibration series by train length
+  budget_hours: 48                   # Mac local budget (BRIEF3 §8)
+
+# P7 — figure F2
+figure:
+  position_index: 0                  # first position (positions sorted by start)
+  r_over_m: 2
+  operators: [Zero, ContextReconstruct]
+  zoom_half_width_m: 6
+  dpi: 300
+  size_in: [13.33, 7.5]              # 16:9
+  font_pt: 11

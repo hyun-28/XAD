@@ -640,3 +640,135 @@ here are copied from script output (`reports/data_audit.md`,
   the longest single call was 1,823 s (series 240/241, n = 900,000, w = 125). W2's ~500 calls per
   series make the incremental scorer (W2-1) a prerequisite, not an optimisation.
 - **Revert:** `configs/detectors.yaml`; re-run `scripts/03_gate1.py --detector MatrixProfile`.
+
+---
+
+# W2-0 pilot (BRIEF3, 2026-09-23)
+
+## D-P0-1 — PREREG committed before the pilot; pre-commit observations disclosed
+
+- **What:** `docs/PREREG_W2.md` committed as `0d041d7` at 2026-09-23T13:55:43+09:00, before
+  `scripts/w2_pilot.py` existed. Prediction ② names ContextReconstruct (researcher, 2026-09-23).
+  The scratch measurements made while planning (S1 residuals, constant-fill interior values on
+  #066, gate-1 `thr_bw`) are listed in the PREREG's own disclosure section.
+- **Enforced:** the pilot refuses to run if the PREREG is uncommitted, modified, or committed
+  later than the run's start (`prereg_commit()`).
+- **Revert:** n/a.
+
+## D-P1-1 — Series-selection rule 3 read as "longest certain-normal piece ≥ 8m"
+
+- **What:** BRIEF3 P1-3 does not say whether "length" is contiguous or total, nor where the
+  "windows straddling `train_end`" exclusion ends. Coded reading: certain-normal =
+  `[train_end + m, start0 − m) ∪ [stop0 + m, n)`, and the **longest contiguous piece** must be
+  ≥ 8m (erasures are contiguous, so a total over two pieces does not guarantee room).
+- **Why it does not matter here:** the four readings (longest/total × start at `train_end` or
+  `train_end + m`) all select **#066 DISTORTEDinsectEPG2**. The report regenerates that table.
+- **Alternatives:** total length; start at `train_end`.
+- **Revert:** `normal_pieces()` / `select_series()` in `scripts/w2_pilot.py`.
+
+## D-P2-1 — Detectors use T_A = x (the whole series), as gate 1 did
+
+- **What (researcher approved, 2026-09-23, plan item D-1):** BRIEF3 P2 writes
+  `T_A = test`; the gate-1 implementation it asks to reuse (`D-C5-3`) uses `T_A = x`. We reuse
+  gate 1, so Z's padded score equals the stored gate-1 file and its P99 equals `thr_bw` — the
+  pilot asserts both. The test-region window values are the same either way (4.5e-13 on #066).
+  R = `stumpy.aamp` with the same arguments (p = 2).
+- **Constant windows (D12 re-check, stumpy 1.14.1):** `stump.py:201-204` — both constant →
+  pearson 1 → D = 0; one constant → pearson 0.5 → D = √m. Constant = `ptp == 0`
+  (`core.py:2614`). The W1 record (D12-a) holds for the installed version.
+- **Revert:** `src/detectors/mp.py`.
+
+## D-P3-1 — Šimić PMs applied in the training-standardised space (researcher decision, 2026-09-23)
+
+- **Decision (STOP-2 option c):** z = (x − μ)/σ with μ, σ = mean/std (ddof 0) of `x[:train_end]`;
+  the upstream "sample" (`self.original`, the statistics source) is `z[:train_end]`; the PM is
+  applied; the erased region is mapped back (·σ + μ). Why: the upstream data were standardised
+  (all 125 saved `training_conf.json`: `"standard"`), so the PMs keep their meaning
+  (Zero = mean level, U(−1,1) = ±1σ, OutOfDistHigh = 100 × abs-max in σ units).
+- **Consequences that follow from the decision (not separate choices):**
+  - positions refer to the whole series (the "canvas"): the erased region lies in the test part,
+    outside the statistics source. UniformNoise100's noise vector therefore has the canvas
+    length (upstream: `len(original)`, identical when sample = canvas); its bounds are
+    hard-coded, so its statistics source is irrelevant. Drawn from `np.random.RandomState(seed)`
+    (= upstream's `np.random.uniform` after `np.random.seed(seed)`), seed in the config.
+  - only `[a, a+r)` is written back; the round trip is not bit-exact on untouched points.
+  - Zero writes μ; SampleMean writes mean(z_train)·σ + μ. Whether the two are bit-identical is
+    checked in the pilot (S5), as the researcher asked; nothing forces it.
+- **Where upstream is undefined** (NearestNeighborWindow whose neighbour would start before 0
+  or run past the end): upstream fails with a numpy broadcast error; we raise `OperatorError`.
+  The equivalence test asserts both fail on the same inputs.
+- **Upstream mutates `self.sample` cumulatively (MoRF steps).** Each pilot condition erases a
+  fresh copy once, which is upstream's first step.
+- **Equivalence:** `tests/test_simic_operators.py` imports the upstream classes from the pinned
+  clone and compares bit for bit, both literally (sample = canvas) and in the adapted setting
+  (upstream `original` replaced by the training part).
+- **Exposed as config:** `operator_space: {standardize, reference}` in `configs/w2_pilot.yaml`.
+- **Revert:** set `standardize: false` and/or `reference: full`.
+
+## D-P3-2 — ContextReconstruct implementation details (definition: researcher, 2026-09-23)
+
+- **Definition** as in `docs/PREREG_W2.md` appendix. Implementation choices:
+  z-normalised distance by `stumpy.mass(query, x[:train_end − r])` (windows j = 0 …
+  train_end − m − r, so j + m + r ≤ train_end); ties → smallest j (`np.argmin`); refuses
+  `a < train_end` (the search region would overlap the erased points) and `a < m`.
+- Runs through the same standardise/map-back wrapper as the PMs; distance is invariant and the
+  fill equivariant under the affine map, so the result equals the raw-space fill to 1e-10
+  (`test_cr_is_equivariant_under_standardisation`).
+- NearestNeighborWindow is kept exactly as upstream; reports label it "이웃 붙이기".
+- **Revert:** `context_reconstruct*` in `src/perturb/operators_simic.py`.
+
+## D-P4-1 — S1 judged with atol = 1e-8 (researcher decision, 2026-09-23, STOP-1 option a)
+
+- **What:** BRIEF3 S1 says "exactly 0". Measured before the run: a full stumpy recomputation
+  leaves rounding residuals on untouched windows (1e-14 … 3.9e-10), because stumpy accumulates
+  the covariance along each diagonal and the erased values enter and leave the sum. S1 is
+  therefore judged at `s1_atol = 1e-8`, and the share of bit-exactly unchanged windows is
+  reported alongside.
+- **Scope:** the residual exists only on the pilot's full-recomputation path. W2 uses the
+  incremental scorer, which copies untouched windows and is exact there by construction.
+- **Revert:** `s1_atol` in `configs/w2_pilot.yaml`.
+
+## D-P5-1 — Pilot design and check definitions, fixed before the run
+
+- **Positions:** seed `position_seed`; one start `a` per position shared by all four r
+  (nested design). Footprint `[a − L, a + r_max + R)` with L, R the largest reach of the affected
+  windows (m − 1) and of every operator's reads (NNW ⌈r/2⌉ / ⌊r/2⌋, ContextReconstruct m,
+  LinearInterpolation 1) at r_max; it must lie in one certain-normal piece and the three
+  footprints must be disjoint. Positions are sorted by `a`; "first" (F2) = smallest `a`.
+- **Metrics** are read from the incremental profile (W2's path); the full recomputation is used
+  only for S1/S4. `p99_normal` per detector = gate-1 definition (buffer = m, numpy percentile)
+  on that detector's unperturbed padded score. `false_alarm_before` (the same test on the
+  unperturbed series) is added so that a pre-existing exceedance is visible.
+- **S2** (Z, r ≥ m): the interior values of Zero, SampleMean and OutOfDistHigh form ONE value
+  (exact equality); whether it equals √m exactly is recorded.
+- **S3** (R, r ≥ m): because D-P3-1 makes Zero and SampleMean write the same fill (to rounding),
+  "the three differ" is checked on the pairs with different fills — (Zero, OutOfDistHigh) and
+  (SampleMean, OutOfDistHigh): interior arrays not equal. Zero vs SampleMean is **S5**.
+- **S5** (researcher request): Zero ≡ SampleMean — x′ and both detectors' profiles
+  (incremental and full) bit-identical. Reported; not a BRIEF3 STOP.
+- **S4:** max |incremental − full| ≤ 1e-8 on D (BRIEF3 §6), over all 192 runs. `|ΔD²|` is
+  reported as a diagnostic, not a criterion.
+- **Exit code:** 2 if any of S1–S4 fails (STOP), after the report and CSV are written.
+- **Revert:** `configs/w2_pilot.yaml`, `sanity()` in `scripts/w2_pilot.py`.
+
+## D-P6-1 — Timing model for the W2-1 extrapolation
+
+- **What:** cost of one incremental run = one AB-join of n_A = r + m − 1 windows against
+  n_B = train_end − m + 1 reference windows, `t = c0 + c1·n_B + c2·n_A·n_B`, fitted by NNLS on
+  direct timings (median of 3) on the pilot series, the 5 longest series and 5 series at
+  training-length quantiles (10/30/50/70/90 %). ContextReconstruct search `t = c0 + c1·n_B`.
+  Other erasers: pilot mean. Unperturbed full scoring: gate-1 `score_s` for Z (measured with 4
+  workers in parallel, so pessimistic) and R = Z × pilot R/Z ratio. W2-1 run count with 8 erasers
+  = 160,000 (BRIEF3's 140,000 assumed 7).
+- **Why direct timings:** the train lengths span two orders of magnitude; a single-series
+  constant would not separate the per-call T_B preprocessing from the join itself.
+- **Revert:** `calibrate()` / `extrapolate()` in `scripts/w2_pilot.py`.
+
+## D-P7-1 — F2 styling
+
+- Original black solid, Zero Okabe–Ito vermillion `#D55E00` dashed, ContextReconstruct Okabe–Ito
+  blue `#0072B2` dash-dot, P99 grey dotted; training grey, anomaly vermillion, erased yellow
+  `#F0E442` shading. BRIEF3's red/blue mapped to the CVD-safe Okabe–Ito pair; the line styles
+  carry identity without colour. (The skill's palette validator needs node, which is not
+  installed; not run.)
+- **Revert:** `figure()` in `scripts/w2_pilot.py`.
