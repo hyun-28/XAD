@@ -70,10 +70,10 @@ class Series:
                                              constant_score="error")
         self.R = (lay.start0, lay.stop0)
         self.ctx = Ctx(train_end=lay.train_end, gt=self.R, w=lay.w)
-        self.cache = ReconCache(self.x, self.ctx)
         self.J0, self.s0 = self.det.score_patch(self.x, self.R)
         self.f0 = float(self.s0.max())
         self.om = fa.omega(lay.train_end, self.R, lay.w, lay.n)
+        self.cache = ReconCache(self.x, self.ctx, band=self.om)      # all E3 runs lie in Ω (D-E3-4)
         self.segs, self.g = fa.segments(self.om, lay.w)
         self.K = len(self.segs)
         self.seed = seed

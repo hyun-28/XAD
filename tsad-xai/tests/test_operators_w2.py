@@ -145,12 +145,14 @@ def test_config_matches_code():
     assert IDENTITY is not None
 
 
+@pytest.mark.parametrize("band", [None, (2940, 3124)])      # segments span [2940, 3124)
 @pytest.mark.parametrize("name", ["recon_test", "recon_train"])
-def test_recon_cache_equals_apply(name):
-    """E3 uses ReconCache for speed; it must give exactly the donors `apply` gives."""
+def test_recon_cache_equals_apply(name, band):
+    """E3 uses ReconCache for speed; it must give exactly the donors `apply` gives — with and without
+    the memory band (E3 passes Ω)."""
     from src.perturb.operators import ReconCache, apply_cached
     x, ctx = _setup()
-    cache = ReconCache(x, ctx)
+    cache = ReconCache(x, ctx, band=band)
     rng = np.random.default_rng(11)
     segs = [(s, s + 8) for s in range(2940, 3120, 8)]            # segments around the GT, like E3's Ω
     for _ in range(60):
@@ -172,3 +174,16 @@ def test_recon_cache_equals_apply(name):
                 apply_cached(name, x, runs, None, ctx, cache)
             continue
         assert np.array_equal(apply_cached(name, x, runs, None, ctx, cache), want)
+
+
+def test_recon_cache_band_bounds_memory_and_rejects_outside_runs():
+    from src.perturb.operators import ReconCache, apply_cached
+    x, ctx = _setup()
+    full, banded = ReconCache(x, ctx), ReconCache(x, ctx, band=(2940, 3124))
+    run = (3000, 3024)
+    assert full.donor(run, [run], "test") == banded.donor(run, [run], "test")
+    n_full = full._order[("test", run)][0].size
+    n_band = banded._order[("test", run)][0].size
+    assert n_band < n_full and n_band <= n_full
+    with pytest.raises(OperatorError):
+        apply_cached("recon_test", x, [(2500, 2510)], None, ctx, banded)

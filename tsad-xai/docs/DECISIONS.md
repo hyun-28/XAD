@@ -1084,3 +1084,15 @@ Implementation choices only; the research decisions are in the approved section 
 - `src/perturb/operators.ReconCache` returns exactly the donor `recon_donor` returns (sorted
   (distance, u) per run, then the first candidate clearing the other runs' constraints);
   `tests/test_operators_w2.py::test_recon_cache_equals_apply`.
+- **Memory band (2026-09-24, after a stopped run):** the first full E3 run (started 20:47 KST) was
+  stopped by Claude Code at ~6 min with the researcher's approval: the cache stored every run's full
+  sorted candidate list (~10 MB per distinct run on the 900k-point series; up to ~2,000 runs per
+  explanation operator), and the Mac reached 15 GB / 16 GB with 764 MB swapped. No E3 output had been
+  written (checked: `results/w2/` held no faithfulness file). Fix: `ReconCache(x, ctx, band=Ω)`
+  keeps each sorted list only up to the first candidate that no other run inside the band can
+  forbid (Z = [Ω_lo − w + 1, Ω_hi + w − 1)); the chosen donor is unchanged by construction.
+  Checked: `test_recon_cache_equals_apply` with and without the band; on #241 (n = 900,000) 300 random
+  KernelSHAP-style masks gave identical donors with and without the band, the banded cache held 522
+  runs in 8.4 kB, and a worker's max RSS over 150 such evaluations was 0.74 GB.
+  The budget (`results/w2/e3_budget.json`, 54eaddd) was timed with the unbanded cache; the band
+  changes memory, not the per-evaluation work.

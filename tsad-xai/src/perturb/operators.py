@@ -138,10 +138,18 @@ class ReconCache:
     other-run constraints are sorted once by (distance, u), and a call returns the first one that also
     clears the other runs' I(.) and edge contexts. Lexicographic (distance, u) order = argmin with ties
     to the smallest u, i.e. exactly `recon_donor` (tests/test_operators_w2.py).
+
+    MEMORY (band): if every run passed to `donor` lies inside `band = [lo, hi)`, the other runs can
+    only forbid candidates overlapping Z = [lo - w + 1, hi + w - 1) (their I(.) and edge contexts,
+    c <= w - 1). The first candidate in (distance, u) order that does not overlap Z is therefore always
+    admissible, and nothing after it can ever be chosen: the stored list is cut right after it.
+    Without this cut a 900k-point series stored ~10 MB per distinct run (E3 run of 2026-09-24 stopped
+    at 15 GB / 16 GB). Runs outside the band raise.
     """
 
-    def __init__(self, x: np.ndarray, ctx: Ctx):
+    def __init__(self, x: np.ndarray, ctx: Ctx, band: tuple[int, int] | None = None):
         self.x, self.ctx = np.asarray(x, dtype=np.float64), ctx
+        self.band = None if band is None else (int(band[0]), int(band[1]))
         self._order: dict = {}
 
     def _sorted(self, run, source):
@@ -163,10 +171,20 @@ class ReconCache:
                     u = u[ok]
                 d = (_sq_dist(x, u - c, x[a - c:a]) + _sq_dist(x, u + L, x[b:b + c])) if u.size else np.empty(0)
                 idx = np.lexsort((u, d))
-                self._order[key] = (u[idx], d[idx])
+                u, d = u[idx], d[idx]
+                if self.band is not None and u.size:
+                    z0, z1 = self.band[0] - w + 1, self.band[1] + w - 1
+                    safe = np.flatnonzero(~((u < z1) & (z0 < u + L)))
+                    if safe.size:
+                        u, d = u[:safe[0] + 1].copy(), d[:safe[0] + 1].copy()
+                self._order[key] = (u, d)
         return self._order[key]
 
     def donor(self, run, runs, source) -> int:
+        if self.band is not None:
+            for ra, rb in runs:
+                if not (self.band[0] <= ra and rb <= self.band[1]):
+                    raise OperatorError(f"run [{ra}, {rb}) outside the cache band {self.band}")
         entry = self._sorted(run, source)
         a, b = run
         if entry is None:
