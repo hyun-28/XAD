@@ -772,3 +772,82 @@ here are copied from script output (`reports/data_audit.md`,
   carry identity without colour. (The skill's palette validator needs node, which is not
   installed; not run.)
 - **Revert:** `figure()` in `scripts/w2_pilot.py`.
+
+---
+
+# PENDING — W2 rev1 결정 (연구자 승인 대기)
+
+> **상태: PENDING. 승인되지 않았다.** 아래는 `docs/briefs/BRIEF_W2_perturbation-experiments_rev1.md`
+> §3 "승인 대기 — PENDING"의 D10–D13, D-E3-1(rev) 문구를 **그대로** 옮긴 것이다(브리프 62–130행).
+> 옮긴 날짜: 2026-09-24 (W2 rev1 세션 1). 승인 문구와 결정 전용 커밋은 세션 2에서 만든다(브리프 §3, §13).
+> 이 섹션이 PENDING인 동안 E2·E3는 실행하지 않는다(브리프 §11).
+
+**D10 — SAR 정의 (rev0 D9의 SAR 부분을 대체)**
+
+- 이상 구간 `R_anom = [GT_start, GT_stop)` (GT 전체). `L = |GT|`.
+- `AI_anom = AI(x, R_anom, op)`, 부호 유지.
+- 제거 반응 `removal = max(0, −AI_anom)`. `AI_anom > 0`이면 `reversal = True`로 표기한다. 연산자가 이상 구간의 점수를 오히려 올린 경우다.
+- 분모: 정상 섭동 허용 조건을 만족하는 **길이 L** 구간 20개(서로 겹치지 않음, seed 고정)의 `median |AI_normal_L|`.
+- `SAR = removal / median|AI_normal_L|`.
+- 분모 `< 1e-6`이면 `SAR = NaN`, `sar_den_zero = True`, 건수를 보고한다.
+- 길이 L 구간이 10개 미만만 들어가면 `sar_few_positions = True`로 표기한다. 5개 미만이면 그 시리즈는 SAR에서만 제외한다 (E2a에서는 제외하지 않는다).
+- **보조 지표** `SAR_abs = |AI_anom| / median|AI_normal_L|`(rev0 정의)를 나란히 보고한다. 정의 선택이 결론을 바꾸는지 보이기 위해서다.
+
+**D11 — 재구성형 연산자의 donor 출처**
+
+- **`recon_test` (주 연산자)**
+  - donor 후보: 테스트 구간 안이면서 아래 영역과 겹치지 않는 길이 `|R|` 구간.
+    - `E`
+    - `I(R)`
+    - (다중 구간 섭동이면) 다른 모든 구간의 `I(·)`
+    - 가장자리 문맥 구간
+  - 가장자리 문맥 길이 `c = max(1, w // 4)`.
+  - 선택 기준: `x[a−c:a] ‖ x[b:b+c]`와 `x[u−c:u] ‖ x[u+L:u+L+c]`의 **원시값 유클리드 거리**가 최소인 `u`. 동률이면 가장 작은 `u`. 결정적이다.
+  - donor는 **섭동 전 원본 x**에서 가져온다.
+- **`recon_train` (대조, 순환성 시연)**
+  - 같은 기준으로 donor를 **학습 구간**에서 가져온다.
+  - 주 분석의 결론에는 쓰지 않는다. D12-b 검증과 "donor 출처가 AI를 결정한다"는 대조에만 쓴다.
+- rev0의 "선형 보간" 선택지는 채택하지 않는다. 직선은 z-정규화하면 기울기와 무관하게 같은 모양이 되기 때문이다. B1–B6 안에 선형 보간이 있으면 메타데이터로만 표기한다 (§6).
+
+**D12 — 사전 등록 예측 (rev0 §6의 D12-a를 대체)**
+
+예측 대상은 `resp`가 아니라 **`j*` 윈도우의 점수**다. 허용오차 `tol`은 §4의 stumpy 소스 추적 결과로 정해 보고서에 적는다.
+
+- **D12-a.** 연산자 메타데이터 `canonical_shape = constant`, `|R| = w`, `n_const_train = 0`이면:
+  - (i) `s(j*)_after = √w` (등식, `|Δ| ≤ tol`)
+  - (ii) `resp_after ≥ √w − tol` (부등식)
+  - 근거: stumpy는 한쪽만 상수인 쌍을 `D² = m`으로 둔다(W1 D12, 소스 확인). z-정규화 거리 `D² = 2m(1 − ρ)`에서 이는 `ρ = 0.5`에 해당한다.
+  - 주의: (i)은 신호 진폭과 무관하지만 AI는 무관하지 않다. `resp_before`와 `scale(x)`가 시리즈마다 다르기 때문이다. 보고서에서 이 둘을 섞지 않는다.
+- **D12-a′.** 같은 조건에서 `n_const_train > 0`이면 `s(j*)_after = 0` (`|Δ| ≤ tol`).
+- **D12-b.** `recon_train`, `|R| = w`이면 `s(j*)_after ≈ 0` (`≤ tol`). donor 윈도우가 참조 집합에 그대로 있기 때문이다.
+- **판정**: 각 예측에서 조건을 만족하는 사례의 **1% 초과**가 어긋나면 "체계적 불일치"로 STOP한다 (§11).
+- 위 조합 외에는 예측하지 않는다. 탐색적으로만 보고한다.
+
+**D13 — E3의 설명 대상과 영역**
+
+- 설명 대상 출력: `f(x) = resp(x, R_anom)`.
+- attribution 영역: `Ω = I(R_anom) ∩ 테스트 구간`. `f`는 Ω 밖 입력에 **정확히 무관**하다(AB-join 구조). 따라서 Ω 밖 attribution은 정의하지 않는다.
+- 세그먼트: 길이 `g = max(1, w // 4)`로 Ω를 분할한다. 세그먼트 수 `K > 64`이면 `g`를 키워 `K ≤ 64`로 맞추고, 시리즈별 `g`를 기록한다.
+- 다중 세그먼트 마스킹: 가려진 세그먼트를 **최대 연속 구간(run)**으로 묶고, 각 run에 연산자를 적용한다.
+- **AM별 정의**
+  - `RandomAttribution`: 세그먼트별 균등 난수, seed 고정.
+  - `FeatureAblation`: `f(x) − f(x with segment k masked)`, 설명용 연산자 사용.
+  - `KernelSHAP`: 세그먼트 단위, 설명용 연산자로 마스킹. 표본 수 `S`는 E3 예산 측정 후 고정하고 기록한다.
+  - `MPNative`: `resp`를 달성한 윈도우 `j_max`와 그 최근접 학습 이웃에 대해, 시점별 기여 `(ẑ_q,i − ẑ_nn,i)²`를 세그먼트로 합산한다. `j_max`의 support 밖은 0. **새로움을 주장하지 않는다.** 선행연구 확인은 연구자 측에서 한다 (§14).
+- **충실성 곡선**
+  - MoRF/LeRF를 세그먼트 비율 10단계(10%, 20%, …, 100%)로 계산한다.
+  - `max_diff = scale(x)` (D8).
+  - DDS/PES/CMI는 `faithfulness_simic.py`를 재사용한다.
+- **AM 순위에 쓰는 지표**: Šimić et al. 저장소(commit `edc6a870`)에서 AM 순위 산출에 쓰인 지표를 **소스 추적해 동일하게** 쓴다. 추적 결과(파일:함수)를 기록한다. 임의로 고르지 않는다.
+- **집계**
+  - (주) 연산자별로 AM 지표를 `content_group` 평균 → AM 순위 → 연산자 쌍 간 Spearman ρ, 전체 Kendall's W.
+  - `content_group` 단위 부트스트랩 B = 1000으로 신뢰구간을 낸다.
+  - (보조) 그룹별 순위의 W 분포.
+  - (보조) 연산자별 AM 쌍 비교는 Wilcoxon signed-rank + Holm.
+  - AM이 4개라 순위 쌍의 ρ는 11개 값만 가진다. 보고서에 이 해상도 한계를 명시한다.
+
+**D-E3-1 (rev) — 설명용/평가용 연산자 분리**
+
+- 설명용 연산자는 `recon_test`로 고정한다.
+- 주 분석의 평가용 연산자에서 `recon_test`는 **제외**한다 (자기 일치 칸 제거). `recon_train`도 같은 계열이므로 주 분석에서 제외하고 별도로 보고한다.
+- **민감도 분석**: 평가용 연산자마다 "설명용 = 평가용"으로 FeatureAblation·KernelSHAP를 다시 계산한다. 주 조건 대비 순위 변화로 자기 일치 효과의 크기를 보고한다.
