@@ -854,6 +854,19 @@ research decision; D10–D13 and D-E3-1(rev) stay in the PENDING section below.
   (for scale(x)); no perturbation. Written to `configs/w2_sample.yaml` and committed before E2.
 - **Revert:** `scripts/w2_sample.py`, `configs/w2.yaml` `sample`.
 
+## D-G2-1 — Gate-2 timing: 5 series run the full E2 grid; scores discarded
+
+- **What:** the 5 series of the 89-group sample at train_end quantiles 0/.25/.5/.75/1 (nearest rank)
+  run the complete E2 grid (9 operators × (20 × 3 normal + 20 SAR + 1 anomaly) regions; per region
+  1 score_patch before + 9 × (operator + score_patch)) under the D-E0-2 profile. Only wall times and
+  sizes are kept (`results/w2/gate2_timing.csv`); every score is discarded (rev1 §12). Per-series
+  times for the whole sample come from NNLS models (score_patch: c0 + c1·n_B + c2·n_A·n_B;
+  operator: c0 + c1·n + c2·n·c); wall = LPT makespan over 4 workers. Region counts per series use
+  min(20, maximum disjoint positions).
+- **Why:** rev1 §7-3 asks for an extrapolation from 5 measured series; measuring the full grid
+  on them removes the per-region sampling assumption for those 5.
+- **Revert:** `scripts/w2_gate2.py`, `configs/w2.yaml` `gate2`.
+
 ---
 
 # PENDING — W2 rev1 결정 (연구자 승인 대기)
