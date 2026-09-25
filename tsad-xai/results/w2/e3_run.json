@@ -1,0 +1,11 @@
+{
+  "generated_utc": "2026-09-25T15:59:24+00:00",
+  "env_header": "python=3.11.16 numpy=1.26.4 sklearn=1.5.2 TSB-AD=1.5(PyPI; src IForest.py:b59a8c7660b9,model_wrapper.py:1702e9bd7d19,feature.py:e8a9858261c1,utility.py:58d5906ce8b5) OS=Darwin-27.0.0-arm64 hostname=yuhyeonbin-ui-MacBookPro.local",
+  "decision_commit": "f29eddfc4e9d16326af80211050db874332f2198",
+  "decision_time": "2026-09-24T20:30:30+09:00",
+  "head": "118f0737987234589230bb03ca2088cbdaced5f2",
+  "elapsed_s": 15033.585511708006,
+  "kernel_shap_samples": "shap_auto",
+  "n_series": 89,
+  "n_excluded": 0
+}

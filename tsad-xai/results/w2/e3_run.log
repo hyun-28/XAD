@@ -1,0 +1,270 @@
+python=3.11.16 numpy=1.26.4 sklearn=1.5.2 TSB-AD=1.5(PyPI; src IForest.py:b59a8c7660b9,model_wrapper.py:1702e9bd7d19,feature.py:e8a9858261c1,utility.py:58d5906ce8b5) OS=Darwin-27.0.0-arm64 hostname=yuhyeonbin-ui-MacBookPro.local
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+/opt/miniconda3/envs/tsadxai-w1/lib/python3.11/site-packages/stumpy/core.py:3548: UserWarning: A large number of values in `P` are smaller than 1e-06.
+For a self-join, try setting `ignore_trivial=True`.
+  warnings.warn(msg)
+E3: 89 series, 3560 curve rows, excluded 0, 15034 s
+exit=0
