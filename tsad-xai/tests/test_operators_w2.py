@@ -187,3 +187,21 @@ def test_recon_cache_band_bounds_memory_and_rejects_outside_runs():
     assert n_band < n_full and n_band <= n_full
     with pytest.raises(OperatorError):
         apply_cached("recon_test", x, [(2500, 2510)], None, ctx, banded)
+
+
+def test_order_d35_ties_random_lerf_reverse_and_abs():
+    from src.metrics.faithfulness_ad import order, order_d35, tie_rank
+    a = np.array([0.0, 2.0, 0.0, -1.0, 2.0, 0.0])
+    ties = tie_rank(a.size, np.random.default_rng(3))
+    m = order_d35(a, ties, "MoRF")
+    assert list(a[m]) == sorted(a, reverse=True)                     # signed descending
+    assert np.array_equal(order_d35(a, ties, "LeRF"), m[::-1])        # exact reverse
+    for grp in (np.flatnonzero(a == 2.0), np.flatnonzero(a == 0.0)):  # ties follow the random rank
+        pos = [int(np.flatnonzero(m == i)[0]) for i in grp]
+        assert [grp[k] for k in np.argsort(pos)] == list(grp[np.argsort(ties[grp])])
+    ma = order_d35(a, ties, "MoRF", key="abs")
+    assert list(np.abs(a)[ma]) == sorted(np.abs(a), reverse=True)
+    distinct = np.array([0.3, -0.2, 0.9, 0.1])                        # no ties: same as the index version
+    t2 = tie_rank(4, np.random.default_rng(0))
+    assert np.array_equal(order_d35(distinct, t2, "MoRF"), order(distinct, "MoRF"))
+    assert np.array_equal(order_d35(distinct, t2, "LeRF"), order(distinct, "LeRF"))

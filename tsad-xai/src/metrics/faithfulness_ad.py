@@ -131,8 +131,45 @@ def mp_native(x: np.ndarray, reference: np.ndarray, J: np.ndarray, scores: np.nd
                   "score_sq": float(scores[k] ** 2)}
 
 
+def tie_rank(K: int, rng: np.random.Generator) -> np.ndarray:
+    """D-E3-5: a seeded random rank per segment, used only to break ties (seed = series, AM)."""
+    perm = rng.permutation(K)
+    rank = np.empty(K, dtype=np.int64)
+    rank[perm] = np.arange(K)
+    return rank
+
+
+def order_d35(attr: np.ndarray, ties: np.ndarray, direction: str, key: str = "signed") -> np.ndarray:
+    """D-E3-5 (approved b8b783c): MoRF = descending `key` value, ties broken by the seeded random rank;
+    LeRF = the exact reverse of MoRF (Šimić interpret_model_regions.py:369, np.flip).
+    key "signed" (main) or "abs" (|R| sensitivity, FeatureAblation / KernelSHAP only)."""
+    v = np.asarray(attr, dtype=np.float64)
+    if key == "abs":
+        v = np.abs(v)
+    elif key != "signed":
+        raise ValueError(key)
+    if ties.shape != v.shape:
+        raise ValueError("tie ranks do not match the attribution")
+    morf = np.lexsort((ties, -v))
+    if direction == "MoRF":
+        return morf
+    if direction == "LeRF":
+        return morf[::-1].copy()
+    raise ValueError(direction)
+
+
+def curve_from_order(f0: float, f_masked: Callable[[Sequence[int], int], float], o: np.ndarray) -> np.ndarray:
+    """Same steps as `curve`, for an explicit order."""
+    K = o.size
+    vals = [f0]
+    for t in range(1, STEPS + 1):
+        vals.append(f_masked(o[:math.ceil(t * K / STEPS)].tolist(), t))
+    return np.array(vals)
+
+
 def order(attr: np.ndarray, direction: str) -> np.ndarray:
-    """MoRF = descending attribution, LeRF = ascending; ties -> smaller segment index first."""
+    """INDEX-TIE VERSION (E3 run of 2026-09-25, kept to reproduce it; superseded by `order_d35`, D-E3-5).
+    MoRF = descending attribution, LeRF = ascending; ties -> smaller segment index first."""
     idx = np.arange(attr.size)
     if direction == "MoRF":
         return np.lexsort((idx, -attr))
