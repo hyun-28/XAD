@@ -1096,3 +1096,86 @@ Implementation choices only; the research decisions are in the approved section 
   runs in 8.4 kB, and a worker's max RSS over 150 such evaluations was 0.74 GB.
   The budget (`results/w2/e3_budget.json`, 54eaddd) was timed with the unbanded cache; the band
   changes memory, not the per-evaluation work.
+
+---
+
+# W2 E3 정렬 규칙 · E4 결정 (2026-09-26, 연구자)
+
+이 섹션은 결정만 담은 커밋으로 기록된다. 이 커밋 이후에만 E3 곡선 재계산과 E4를 실행한다.
+
+## 공통 (연구자)
+
+- **양수 attribution의 의미:** f = resp(x, GT)를 올리는 근거다. 단변량이라 채널 풀링은 적용하지 않는다.
+- **근거:** Arras et al.(arXiv:2003.07258 §3.4, §5.2, 부록 E)은 풀링을 방법별 최고 성능으로 골랐지만,
+  우리는 결과를 보기 전에 규칙 하나로 고정한다.
+- **동률:** 시리즈별 seed를 고정한 무작위 순서로 깬다. 인덱스 순서는 쓰지 않는다(위치 편향 방지).
+- **진단:** AM별 음수 질량 비율 Σ|R⁻| / Σ|R|의 분포를 보고한다. 해석하지 않는다.
+
+## D-E3-5 — 충실성 정렬 규칙 (연구자; 원 지시의 번호 "D-E3-2"는 기존 D-E3-2(KernelSHAP S)와 충돌하여 D-E3-5로 기록)
+
+- **주:** 부호를 살린 내림차순. MoRF는 가장 큰 양수부터, LeRF는 가장 작은 값(가장 큰 음수)부터 지운다.
+- **동률:** seed 고정 무작위 순열로 깬다. **순열의 seed는 (시리즈, AM)으로만 정한다** — 평가용 연산자 B1–B6 전체,
+  recon_train(별도 보고), 자기 일치 조건에 같은 순열을 쓴다. MoRF = (값 내림차순, 동률은 순열 순서),
+  **LeRF = MoRF의 정확한 역순** (Šimić `interpret_model_regions.py:369` `np.flip`).
+- **민감도:** |R| 내림차순. FeatureAblation과 KernelSHAP에만 적용한다(Random·MPNative는 비음수라 결과가 같다).
+- **Šimić 원본 추적 (edc6a870, Claude Code):**
+  - `interpret_model_regions.py:307-315` 샘플별 min-max 정규화 (a − min)/(max − min) — 순서 보존 단조 변환.
+  - `:356-361` 영역 relevance = 영역 평균, `np.flip(np.argsort(ss_relevances))` → **부호 유지 내림차순**(절댓값 아님).
+    동률은 `np.argsort` 기본(quicksort, 불안정) 순서.
+  - `:369` LeRF = `np.flip(MoRF)`.
+  - 따라서 |R| 민감도 조건은 Šimić 호환 조건을 **겸하지 않는다**. 부호 유지 주 조건이 Šimić과 같은 부호 처리다.
+- **버전:** **주 결과는 무작위 동률 버전이다. 인덱스 동률 버전은 규칙 확정 전에 생성된 기록으로 보존한다.**
+  (`results/w2/faithfulness.csv.gz`, `reports/w2_ranking.md` @ `6c83779`; 인덱스 동률 = 세그먼트 번호가 작은 쪽부터,
+  `faithfulness_ad.order`, LeRF는 오름차순 별도 정렬.)
+- **재계산 범위:** 주 조건 곡선(B1–B6 + recon_train), 자기 일치 민감도 곡선, |R| 민감도(FeatureAblation·KernelSHAP).
+  attribution은 E3 저장본(`results/w2/e3_attr.csv.gz`)을 그대로 쓴다. 마스크별 확률 연산자의 seed 키는 E3와 같게 둔다.
+
+## D-PRE-2 — 노출 기록 (인덱스 동률 버전 E3)
+
+- 인덱스 버전 E3 결과는 **규칙 확정 전에 생성됐다**(E3 실행 2026-09-25, 커밋 `6c83779`, `docs/W2_REPORT.md` @ `621afd4`).
+- **Claude Code는 그 값을 봤다**(CMI, 순위, W, ρ, 자기 일치 민감도).
+- 연구자 열람 여부: **[보지 않음]**.
+- 새 규칙의 근거(인덱스 동률의 위치 편향)는 결과와 무관하다. 저장된 attribution의 동률 비율(FeatureAblation 86/89
+  시리즈, MPNative 89/89)은 곡선 값을 읽지 않고 attribution만으로 확인한 것이다.
+
+## D-E4-1 — RMA/RRA의 부호 처리 (연구자)
+
+- **주:** ReLU(R), 즉 양수부만 쓴다. **민감도:** |R|.
+- R_total = 0이면(양수가 없으면) RMA를 NaN으로 두고 건수를 보고한다.
+- ~~세그먼트가 GT와 겹치면 GT 세그먼트로 센다. K는 GT 세그먼트 수다. 우연 수준 = GT 세그먼트 수 / Ω 세그먼트 수.~~
+  → **D-E4-2로 대체**(점 단위).
+
+## D-E4-2 — 점 단위 계산 (연구자)
+
+1. **투영:** ReLU를 세그먼트 단위로 먼저 적용한다. 그다음 세그먼트 k의 값 R_k를 |seg_k|로 나눠 그 세그먼트의 모든
+   점에 준다(질량 보존). 민감도 조건(|R|)도 같은 방식으로 투영한다.
+2. **RMA** = GT 안 점들의 질량 합 / Ω 전체 질량 합. 질량 합이 0이면 NaN, 건수 보고.
+3. **RRA:** K = |GT|(점 수). 점 단위 값의 top-K 중 GT 안에 있는 비율. 동률은 시리즈별 seed 무작위로 깬다(D-E3-5와 같은 규칙).
+4. 시리즈별로 **우연 수준 |GT| / |Ω|(점 기준)**과 **oracle 상한**(각 세그먼트에 |seg_k ∩ GT| / |seg_k|를 기여로 준 설명의
+   RMA와 RRA)을 같이 계산해 병기한다. AM 결과는 원값과 함께 **(값 − 우연) / (oracle − 우연)**으로 정규화한 값도 보고한다.
+   분모가 1e-6 미만이면 정규화 값은 NaN.
+5. GT가 세그먼트 길이 g보다 짧은 시리즈 수와 그 시리즈의 oracle 분포를 따로 보고한다.
+6. GT 밖(Ω 안)에 놓인 질량은 보정하지 않는다. faithfulness와 plausibility의 차이 자체가 E4에서 관찰하려는 대상이다.
+
+## D-E4-3 — plausibility 순위 (연구자)
+
+1. **주 지표:** 정규화 RRA = (RRA − 우연) / (oracle − 우연) (D-E4-2 정의).
+   근거: E3의 MoRF/LeRF 곡선은 attribution의 순서만 쓰고, RRA도 순서만 쓴다. 두 축이 같은 정보를 쓰게 맞춘다.
+   **소스 확인 (Claude Code, edc6a870):** Šimić 구현에서 attribution은 `relevance_orders`(argsort)를 통해서만 곡선에
+   들어간다(`interpret_model_regions.py:348-369, :424`). DDS는 곡선만(`utils/res_utils.py:51-78`), PES는 DDS 목록만
+   (`:81-99`), CMI는 DDS 평균과 PES만(`:176-191`) 쓴다. 점→영역 집계에서 값의 평균을 쓰지만 그 뒤로는 순서만 쓴다.
+   → 순서 이외의 방식으로 attribution 값이 들어가는 곳 없음(STOP 아님).
+2. **민감도:** 정규화 RMA. D-E4-1의 |R| 민감도와 교차하지 않는다(주 지표 × 부호 규칙 주 조건에서만 계산).
+3. **집계:** E3와 동일 — content_group 평균 → AM 순위. 정규화 값이 NaN인 시리즈는 제외하고 AM별 제외 건수를 보고한다.
+4. **비교:** E3 주 조건(설명용 = recon_test)의 평가용 연산자 B1–B6 순위 각각과 Kendall τ. 6개 값 모두 보고.
+5. **해상도 보완:** (a) 두 축의 AM 순위표를 나란히 제시 (b) 그룹 단위로 E3(연산자별)와 E4 순위를 각각 매겨 τ를
+   계산하고 그 분포를 보고 (c) AM 4개라 τ가 7개 값만 가진다는 점을 명시.
+6. 가설 검정은 하지 않는다. E4 축은 plausibility로 부르고 faithfulness와 구분한다.
+7. **sanity:** Random의 정규화 RRA 분포(중앙값, IQR)를 보고한다. 0에서 크게 벗어나면 해석하지 말고 구현 점검 결과부터 보고한다.
+
+## 보고 추가 요구 (연구자)
+
+- 두 버전(무작위 동률 / 인덱스 동률)의 AM 순위를 연산자별로 나란히 놓은 대조표, 연산자 쌍 간 ρ와 전체 W 비교. 해석 없음.
+- AM별 동률 비율(동률 세그먼트 수 / K)의 분포를 진단치로 보고.
+- `docs/W2_REPORT.md`의 E3 절은 새 버전을 본문으로, 인덱스 버전은 부록 "규칙 확정 전 버전"으로.
+- E4는 재계산이 끝난 뒤 새 기여도 순서 규칙으로 실행.
