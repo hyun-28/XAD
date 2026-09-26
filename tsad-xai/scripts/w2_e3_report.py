@@ -1,4 +1,5 @@
-"""w2_e3_report.py -- reports/w2_ranking.md and reports/figures/w2/rank_bump.png from E3 outputs.
+"""w2_e3_report.py -- INDEX-TIE VERSION (규칙 확정 전 버전, superseded by scripts/w2_e3v2_report.py under D-E3-5):
+reports/w2_ranking_v1_index_ties.md and reports/figures/w2/rank_bump_v1_index_ties.png from the E3 run of 2026-09-25.
 
 AM ranking metric = the one Šimić et al. rank AMs by (source trace, edc6a870):
     `notebook - results summary and figures.ipynb` cell 9, `rank_ams_by_cmi`, `rank_by_metric = 'cmi-mean'`:
@@ -28,8 +29,8 @@ from src.config import REPO_ROOT  # noqa: E402
 from src.metrics.faithfulness_simic import cmi, pes  # noqa: E402
 
 RES = REPO_ROOT / "results" / "w2"
-REPORT = REPO_ROOT / "reports" / "w2_ranking.md"
-FIG = REPO_ROOT / "reports" / "figures" / "w2" / "rank_bump.png"
+REPORT = REPO_ROOT / "reports" / "w2_ranking_v1_index_ties.md"   # 규칙 확정 전 버전 (D-E3-5, b8b783c)
+FIG = REPO_ROOT / "reports" / "figures" / "w2" / "rank_bump_v1_index_ties.png"
 EVAL_OPS = ["B1_zero", "B2_global_mean", "B3_local_mean", "B4_linear_interp", "B5_gaussian", "B6_shuffle"]
 AMS = ["Random", "FeatureAblation", "KernelSHAP", "MPNative"]
 B = 1000
