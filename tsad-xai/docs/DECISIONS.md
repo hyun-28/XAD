@@ -1488,7 +1488,9 @@ Implementation choices only; the research decisions are in the approved section 
 
 ---
 
-# D-E5-35 — E5 구현 세부 (Claude Code, D-E5-34 위임; 판정·표본·STOP을 바꾸지 않음)
+# D-E5-35 — E5 구현 세부 (Claude Code, D-E5-34 위임; 판정·표본·STOP을 바꾸지 않음) — **연구자 승인 (2026-09-28)**
+
+> 8번의 검정 호출은 D-E5-36으로 보완된다(`method`, `correction`). 5번의 CR 불가 조건 정정(train_end < m + r)도 승인됐다.
 
 각 항목은 무엇 / 근거 / 되돌리는 법. 설정값은 `configs/w2_e5.yaml`(구현 시 생성)에 노출한다.
 
@@ -1525,7 +1527,8 @@ Implementation choices only; the research decisions are in the approved section 
 
 # PENDING — E5 판정 절차 세부 — 연구자 결정 대기
 
-> **상태: PENDING.** D-E5-34 기준(판정·표본·STOP에 영향 가능)에 해당하는 것만. Claude Code는 고르지 않았다. 값은 계산하지 않았다.
+> **상태: 결정됨 → 아래 D-E5-36 ~ D-E5-39 (2026-09-28, 연구자).** 선택지 목록은 기록으로 보존한다.
+> (원래 상태: PENDING.) D-E5-34 기준(판정·표본·STOP에 영향 가능)에 해당하는 것만. Claude Code는 고르지 않았다. 값은 계산하지 않았다.
 
 - **E5-P32 Wilcoxon p값 계산법** — scipy 1.17.1 `stats.wilcoxon`의 기본값(`method="auto"`, `correction=False`;
   `scipy/stats/_wilcoxon.py:117-118, 218-230`)은 n > 50이면 정규근사, n ≤ 50이면 동률·0이 없을 때만 정확 분포,
@@ -1541,3 +1544,42 @@ Implementation choices only; the research decisions are in the approved section 
 - **E5-P35 STOP 셈에 넣는 "빠진" 사유 (D-E5-32)** — 그룹이 한 검정에서 빠지는 사유: (i) (시리즈, r) 위치 부족·CR 불가로
   D-E5-20/30 조건 미충족, (ii) ①의 분모 D = 0, (iii) Wilcoxon `zero_method`가 버린 0 차이(①의 wilcox), (iv) 탐지기별 r
   집합이 비어 ②에서 빠짐. (A) (i)과 (iv)만 (D-E5-16이 든 사유: 위치 부족·CR 불가) / (B) (i), (ii), (iv) / (C) (i)–(iv) 전부.
+
+---
+
+# E5 판정 절차 세부 — 승인, 규칙 폐쇄 (2026-09-28, 연구자)
+
+이 섹션은 결정만 담은 커밋으로 기록된다. E5 값은 계산하지 않았다. 번호 대응: D-E5-36 ~ D-E5-39 = E5-P32 ~ E5-P35.
+D-E5-35(구현 세부)와 CR 불가 조건 정정(**train_end < m + r**, `src/perturb/operators_simic.py:172-174`)도 승인됐다.
+
+## D-E5-36 — Wilcoxon p값 계산법 (E5-P32)
+
+- **모든** Wilcoxon 검정(①a, ①b, ②의 모든 검정)은 **정규근사 + 연속성 보정**: `method="approx", correction=True`.
+- scipy 버전을 기록한다(보고서와 결과 메타데이터).
+- 구현 확인(Claude Code): scipy 1.17.1은 `method="approx"`를 받아 `"asymptotic"`으로 바꾼다
+  (`scipy/stats/_morestats.py:3948-3950` "replace approx by asymptotic to ensure backwards compatability").
+  보정은 `scipy/stats/_wilcoxon.py`의 `method == 'asymptotic'` 분기에서 z에서 `sign * 0.5 / se`를 뺀다.
+  zero_method는 D-E5-21(① wilcox), D-E5-33(② pratt) 그대로.
+
+## D-E5-37 — Holm 묶음 (E5-P33)
+
+- Holm 묶음은 **계획된 검정 전부**: ①a, ①b, ②Z, ②R, 그리고 D-E5-22에 따른 2위 동률 추가 검정.
+- **수행하지 않은 검정은 p = 1**로 넣는다.
+
+## D-E5-38 — ② 전체 판정의 결합 (E5-P34)
+
+- Z·R 중 하나라도 **불성립**이면 불성립.
+- 아니면 하나라도 **판정 불가**면 판정 불가.
+- 둘 다 **성립**이면 성립.
+
+## D-E5-39 — STOP 셈의 사유 (E5-P35; D-E5-32 구체화)
+
+- 넣는 사유: (i) 위치 부족·CR 불가, (ii) ①의 분모 D = 0, (iv) ②에서 r 집합이 빔.
+- **넣지 않는 사유:** (iii) Wilcoxon `zero_method`가 버린 0 차이.
+
+## D-E5-40 — 규칙 폐쇄 (연구자)
+
+- **E5 규칙은 이 커밋으로 닫는다.** 더 이상 PENDING을 올리지 않는다.
+- 이후 발견되는 모호함은 선택지 중 **"성립" 판정이 나오기 가장 어려운 쪽**으로 Claude Code가 정하고, 이유와 함께
+  DECISIONS에 기록한 뒤 진행한다.
+- 예외는 **구현이 불가능한 경우뿐**이다. 그때만 멈추고 보고한다.
