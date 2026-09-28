@@ -1,0 +1,131 @@
+{
+  "elapsed_s": 7147.899254499003,
+  "reps": {
+    "0": {
+      "seconds": 357.2857020840165,
+      "finished_utc": "2026-09-28T15:30:34+00:00",
+      "head": "2948e9f6de14c832d69da80a2bbe4a88a1185d7e",
+      "env_header": "python=3.11.16 numpy=1.26.4 sklearn=1.5.2 TSB-AD=1.5(PyPI; src IForest.py:b59a8c7660b9,model_wrapper.py:1702e9bd7d19,feature.py:e8a9858261c1,utility.py:58d5906ce8b5) OS=Darwin-27.0.0-arm64 hostname=yuhyeonbin-ui-MacBookPro.local"
+    },
+    "1": {
+      "seconds": 340.6203996669792,
+      "finished_utc": "2026-09-28T15:36:15+00:00",
+      "head": "2948e9f6de14c832d69da80a2bbe4a88a1185d7e",
+      "env_header": "python=3.11.16 numpy=1.26.4 sklearn=1.5.2 TSB-AD=1.5(PyPI; src IForest.py:b59a8c7660b9,model_wrapper.py:1702e9bd7d19,feature.py:e8a9858261c1,utility.py:58d5906ce8b5) OS=Darwin-27.0.0-arm64 hostname=yuhyeonbin-ui-MacBookPro.local"
+    },
+    "2": {
+      "seconds": 344.42874829200446,
+      "finished_utc": "2026-09-28T15:41:59+00:00",
+      "head": "2948e9f6de14c832d69da80a2bbe4a88a1185d7e",
+      "env_header": "python=3.11.16 numpy=1.26.4 sklearn=1.5.2 TSB-AD=1.5(PyPI; src IForest.py:b59a8c7660b9,model_wrapper.py:1702e9bd7d19,feature.py:e8a9858261c1,utility.py:58d5906ce8b5) OS=Darwin-27.0.0-arm64 hostname=yuhyeonbin-ui-MacBookPro.local"
+    },
+    "3": {
+      "seconds": 339.37509495799895,
+      "finished_utc": "2026-09-28T15:47:39+00:00",
+      "head": "2948e9f6de14c832d69da80a2bbe4a88a1185d7e",
+      "env_header": "python=3.11.16 numpy=1.26.4 sklearn=1.5.2 TSB-AD=1.5(PyPI; src IForest.py:b59a8c7660b9,model_wrapper.py:1702e9bd7d19,feature.py:e8a9858261c1,utility.py:58d5906ce8b5) OS=Darwin-27.0.0-arm64 hostname=yuhyeonbin-ui-MacBookPro.local"
+    },
+    "4": {
+      "seconds": 338.0845527500205,
+      "finished_utc": "2026-09-28T15:53:17+00:00",
+      "head": "2948e9f6de14c832d69da80a2bbe4a88a1185d7e",
+      "env_header": "python=3.11.16 numpy=1.26.4 sklearn=1.5.2 TSB-AD=1.5(PyPI; src IForest.py:b59a8c7660b9,model_wrapper.py:1702e9bd7d19,feature.py:e8a9858261c1,utility.py:58d5906ce8b5) OS=Darwin-27.0.0-arm64 hostname=yuhyeonbin-ui-MacBookPro.local"
+    },
+    "5": {
+      "seconds": 338.3013947910222,
+      "finished_utc": "2026-09-28T15:58:55+00:00",
+      "head": "2948e9f6de14c832d69da80a2bbe4a88a1185d7e",
+      "env_header": "python=3.11.16 numpy=1.26.4 sklearn=1.5.2 TSB-AD=1.5(PyPI; src IForest.py:b59a8c7660b9,model_wrapper.py:1702e9bd7d19,feature.py:e8a9858261c1,utility.py:58d5906ce8b5) OS=Darwin-27.0.0-arm64 hostname=yuhyeonbin-ui-MacBookPro.local"
+    },
+    "6": {
+      "seconds": 339.0465250419802,
+      "finished_utc": "2026-09-28T16:04:34+00:00",
+      "head": "2948e9f6de14c832d69da80a2bbe4a88a1185d7e",
+      "env_header": "python=3.11.16 numpy=1.26.4 sklearn=1.5.2 TSB-AD=1.5(PyPI; src IForest.py:b59a8c7660b9,model_wrapper.py:1702e9bd7d19,feature.py:e8a9858261c1,utility.py:58d5906ce8b5) OS=Darwin-27.0.0-arm64 hostname=yuhyeonbin-ui-MacBookPro.local"
+    },
+    "7": {
+      "seconds": 339.8853489579924,
+      "finished_utc": "2026-09-28T16:10:14+00:00",
+      "head": "2948e9f6de14c832d69da80a2bbe4a88a1185d7e",
+      "env_header": "python=3.11.16 numpy=1.26.4 sklearn=1.5.2 TSB-AD=1.5(PyPI; src IForest.py:b59a8c7660b9,model_wrapper.py:1702e9bd7d19,feature.py:e8a9858261c1,utility.py:58d5906ce8b5) OS=Darwin-27.0.0-arm64 hostname=yuhyeonbin-ui-MacBookPro.local"
+    },
+    "8": {
+      "seconds": 341.30289041699143,
+      "finished_utc": "2026-09-28T16:15:55+00:00",
+      "head": "2948e9f6de14c832d69da80a2bbe4a88a1185d7e",
+      "env_header": "python=3.11.16 numpy=1.26.4 sklearn=1.5.2 TSB-AD=1.5(PyPI; src IForest.py:b59a8c7660b9,model_wrapper.py:1702e9bd7d19,feature.py:e8a9858261c1,utility.py:58d5906ce8b5) OS=Darwin-27.0.0-arm64 hostname=yuhyeonbin-ui-MacBookPro.local"
+    },
+    "9": {
+      "seconds": 340.8450096670131,
+      "finished_utc": "2026-09-28T16:21:36+00:00",
+      "head": "2948e9f6de14c832d69da80a2bbe4a88a1185d7e",
+      "env_header": "python=3.11.16 numpy=1.26.4 sklearn=1.5.2 TSB-AD=1.5(PyPI; src IForest.py:b59a8c7660b9,model_wrapper.py:1702e9bd7d19,feature.py:e8a9858261c1,utility.py:58d5906ce8b5) OS=Darwin-27.0.0-arm64 hostname=yuhyeonbin-ui-MacBookPro.local"
+    },
+    "10": {
+      "seconds": 340.47321287498926,
+      "finished_utc": "2026-09-28T16:27:17+00:00",
+      "head": "2948e9f6de14c832d69da80a2bbe4a88a1185d7e",
+      "env_header": "python=3.11.16 numpy=1.26.4 sklearn=1.5.2 TSB-AD=1.5(PyPI; src IForest.py:b59a8c7660b9,model_wrapper.py:1702e9bd7d19,feature.py:e8a9858261c1,utility.py:58d5906ce8b5) OS=Darwin-27.0.0-arm64 hostname=yuhyeonbin-ui-MacBookPro.local"
+    },
+    "11": {
+      "seconds": 339.26907262500026,
+      "finished_utc": "2026-09-28T16:32:56+00:00",
+      "head": "2948e9f6de14c832d69da80a2bbe4a88a1185d7e",
+      "env_header": "python=3.11.16 numpy=1.26.4 sklearn=1.5.2 TSB-AD=1.5(PyPI; src IForest.py:b59a8c7660b9,model_wrapper.py:1702e9bd7d19,feature.py:e8a9858261c1,utility.py:58d5906ce8b5) OS=Darwin-27.0.0-arm64 hostname=yuhyeonbin-ui-MacBookPro.local"
+    },
+    "12": {
+      "seconds": 338.8614300409972,
+      "finished_utc": "2026-09-28T16:38:35+00:00",
+      "head": "2948e9f6de14c832d69da80a2bbe4a88a1185d7e",
+      "env_header": "python=3.11.16 numpy=1.26.4 sklearn=1.5.2 TSB-AD=1.5(PyPI; src IForest.py:b59a8c7660b9,model_wrapper.py:1702e9bd7d19,feature.py:e8a9858261c1,utility.py:58d5906ce8b5) OS=Darwin-27.0.0-arm64 hostname=yuhyeonbin-ui-MacBookPro.local"
+    },
+    "13": {
+      "seconds": 338.7983531659993,
+      "finished_utc": "2026-09-28T16:44:14+00:00",
+      "head": "2948e9f6de14c832d69da80a2bbe4a88a1185d7e",
+      "env_header": "python=3.11.16 numpy=1.26.4 sklearn=1.5.2 TSB-AD=1.5(PyPI; src IForest.py:b59a8c7660b9,model_wrapper.py:1702e9bd7d19,feature.py:e8a9858261c1,utility.py:58d5906ce8b5) OS=Darwin-27.0.0-arm64 hostname=yuhyeonbin-ui-MacBookPro.local"
+    },
+    "14": {
+      "seconds": 338.5252455000009,
+      "finished_utc": "2026-09-28T16:49:52+00:00",
+      "head": "2948e9f6de14c832d69da80a2bbe4a88a1185d7e",
+      "env_header": "python=3.11.16 numpy=1.26.4 sklearn=1.5.2 TSB-AD=1.5(PyPI; src IForest.py:b59a8c7660b9,model_wrapper.py:1702e9bd7d19,feature.py:e8a9858261c1,utility.py:58d5906ce8b5) OS=Darwin-27.0.0-arm64 hostname=yuhyeonbin-ui-MacBookPro.local"
+    },
+    "15": {
+      "seconds": 338.82233854100923,
+      "finished_utc": "2026-09-28T16:55:31+00:00",
+      "head": "2948e9f6de14c832d69da80a2bbe4a88a1185d7e",
+      "env_header": "python=3.11.16 numpy=1.26.4 sklearn=1.5.2 TSB-AD=1.5(PyPI; src IForest.py:b59a8c7660b9,model_wrapper.py:1702e9bd7d19,feature.py:e8a9858261c1,utility.py:58d5906ce8b5) OS=Darwin-27.0.0-arm64 hostname=yuhyeonbin-ui-MacBookPro.local"
+    },
+    "16": {
+      "seconds": 338.58208437499707,
+      "finished_utc": "2026-09-28T17:01:10+00:00",
+      "head": "2948e9f6de14c832d69da80a2bbe4a88a1185d7e",
+      "env_header": "python=3.11.16 numpy=1.26.4 sklearn=1.5.2 TSB-AD=1.5(PyPI; src IForest.py:b59a8c7660b9,model_wrapper.py:1702e9bd7d19,feature.py:e8a9858261c1,utility.py:58d5906ce8b5) OS=Darwin-27.0.0-arm64 hostname=yuhyeonbin-ui-MacBookPro.local"
+    },
+    "17": {
+      "seconds": 338.96239570801845,
+      "finished_utc": "2026-09-28T17:06:49+00:00",
+      "head": "2948e9f6de14c832d69da80a2bbe4a88a1185d7e",
+      "env_header": "python=3.11.16 numpy=1.26.4 sklearn=1.5.2 TSB-AD=1.5(PyPI; src IForest.py:b59a8c7660b9,model_wrapper.py:1702e9bd7d19,feature.py:e8a9858261c1,utility.py:58d5906ce8b5) OS=Darwin-27.0.0-arm64 hostname=yuhyeonbin-ui-MacBookPro.local"
+    },
+    "18": {
+      "seconds": 338.96847833300126,
+      "finished_utc": "2026-09-28T17:12:28+00:00",
+      "head": "2948e9f6de14c832d69da80a2bbe4a88a1185d7e",
+      "env_header": "python=3.11.16 numpy=1.26.4 sklearn=1.5.2 TSB-AD=1.5(PyPI; src IForest.py:b59a8c7660b9,model_wrapper.py:1702e9bd7d19,feature.py:e8a9858261c1,utility.py:58d5906ce8b5) OS=Darwin-27.0.0-arm64 hostname=yuhyeonbin-ui-MacBookPro.local"
+    },
+    "19": {
+      "seconds": 338.96986429198296,
+      "finished_utc": "2026-09-28T17:18:07+00:00",
+      "head": "2948e9f6de14c832d69da80a2bbe4a88a1185d7e",
+      "env_header": "python=3.11.16 numpy=1.26.4 sklearn=1.5.2 TSB-AD=1.5(PyPI; src IForest.py:b59a8c7660b9,model_wrapper.py:1702e9bd7d19,feature.py:e8a9858261c1,utility.py:58d5906ce8b5) OS=Darwin-27.0.0-arm64 hostname=yuhyeonbin-ui-MacBookPro.local"
+    },
+    "20": {
+      "seconds": 338.49111241698847,
+      "finished_utc": "2026-09-28T17:23:45+00:00",
+      "head": "2948e9f6de14c832d69da80a2bbe4a88a1185d7e",
+      "env_header": "python=3.11.16 numpy=1.26.4 sklearn=1.5.2 TSB-AD=1.5(PyPI; src IForest.py:b59a8c7660b9,model_wrapper.py:1702e9bd7d19,feature.py:e8a9858261c1,utility.py:58d5906ce8b5) OS=Darwin-27.0.0-arm64 hostname=yuhyeonbin-ui-MacBookPro.local"
+    }
+  }
+}
