@@ -1601,3 +1601,48 @@ D-E5-35(구현 세부)와 CR 불가 조건 정정(**train_end < m + r**, `src/pe
   동률 순열 시드 = [20260929, k, 시리즈 번호, 설명기](연산자 간 같은 순열), Random 기여도 균등 난수 시드 =
   [20260930, k, 시리즈 번호], FeatureAblation·MPNative·Random 곡선 재계산, KernelSHAP은 저장 곡선. k = 0은 주 결과
   시드로 W = 0.233과 CMI 재현 확인(다르면 멈춤).
+
+---
+
+# W2 후속 보고서 검토 결정 (2026-09-29, 연구자)
+
+이 섹션은 결정만 담은 커밋으로 기록된다. 근거 문서: `docs/W2_FOLLOWUP_REPORT.md` (`712afb5`).
+
+## D-F8-2 — D-F8-1의 비교 값 (연구자)
+
+- D-F8-1의 "잡음을 넘는다" 판정에 쓰는 설명기 쪽 값은 **(iii) 복제 최솟값**(복제 20회 모두가 같은 연산자 Random
+  복제 20회의 최댓값보다 큼)으로 한다.
+- **결과를 본 뒤 정한 것**이므로 세 읽기 중 **가장 엄격한 읽기**를 택했다.
+- (i) 주 결과(k = 0) 값, (ii) 복제 중앙값은 보고서에 **병기만** 유지한다.
+- 이 기준으로 "잡음을 넘는다"인 칸: B1_zero × MPNative, B4_linear_interp × KernelSHAP (`reports/w2_tie_null.md` §5).
+
+## D-F8-3 — C2 본문 보고 형식 (연구자)
+
+- W와 (−,−) 칸 수는 **"사전 등록 주 결과(k = 0) 값; 복제 20회 중앙값 [최소, 최대]"**로 나란히 보고한다.
+- k = 0의 (−,−) 칸 수(12)와 #4 [2]의 B1 Random 차이(0.368)가 **복제 범위 밖**이라는 사실을 함께 적는다.
+
+## D-F8-4 — CMI 주 지표 (연구자)
+
+- CMI는 **Šimić 원 구현**(`src/metrics/faithfulness_simic.py:122-133`; `res_utils.py:176-191`)을 주 지표로 유지한다.
+- 부호를 살린 CMI(−|CMI| for (−,−))는 **사후 민감도로만** 보고한다.
+
+## D-W2-1 — C1 제시 순서 (연구자)
+
+- C1의 사전 등록 지표(SAR, D10)는 **표에 그대로 보고**한다.
+- 본문의 대표 수치는 **오경보율과 reversal 비율**로 한다.
+- 사전 등록 결과를 바꾸는 것이 아니라 **제시 순서의 결정**이다.
+
+## D-C5-3 — Matrix Profile 래퍼 규칙 (W1에서 결정, 사후 이관)
+
+- **W1에서 결정, 사후 이관.** 근거 커밋 `6b5d7c1` (2026-09-23, 게이트 1 MatrixProfile PASS).
+  코드·테스트·보고서가 이 ID를 인용해 왔으나 이 문서에 항목이 없었다(누락). 내용은 아래 파일에 적힌 그대로다.
+- **규칙 1:** self-join 설정에서 우리 점수는 TSB-AD `MatrixProfile.fit().decision_scores_`(패딩 포함)와 같아야 한다.
+  입증: `tests/test_matrixprofile.py`(머리말 "Rule 1"), `src/detectors/matrixprofile.py` 머리말(최대 차이 0.0,
+  `docs/W1_REPORT.md:179`, `README.md:104`).
+- **규칙 2:** `fit_on = train_prefix`는 저장된 참조(학습 구간)에 대한 **AB-join**(`T_A = x`, `T_B = x[:train_end]`,
+  `ignore_trivial = False`)이며, x를 자기 자신과 self-join하지 않는다. `fit_on = full` → self-join
+  (`configs/detectors.yaml:40-45` "D-C5-3 rules 1-2").
+- **규칙 3:** 윈도우 = 전체 시리즈의 `find_length_rank(rank = 1)`(벤치마크 경로와 같음), `fit_on`에 따라 바뀌지 않으며
+  시리즈별로 기록한다(`scripts/03_gate1.py:96-99` "D-C5-3 rule 3").
+- **부수:** Matrix Profile은 결정론적이므로 seed 1개만 실행하고 출처 기록용으로 남긴다
+  (`configs/detectors.yaml` `seeds: [0]`, `reports/gate1_MatrixProfile.md` "a single run is the whole distribution (D-C5-3)").
